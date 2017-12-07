@@ -3,6 +3,7 @@ channels:
 - defaults
 dependencies:
 - jupyter
+- python=3.5
 - seaborn
 - statsmodels
 - pip:
