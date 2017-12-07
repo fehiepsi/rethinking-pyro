@@ -1,9 +1,10 @@
-name: stat-rethink-pymc3
+name: stat-rethink-pyro
 channels:
 - defaults
 dependencies:
-  - jupyter
-  - seaborn
-  - statsmodels
-  - pip:
-     - "git+git://github.com/pymc-devs/pymc3.git@master"
+- jupyter
+- seaborn
+- statsmodels
+- pip:
+  - "git+https://github.com/fehiepsi/pyro.git@add-callback"
+
