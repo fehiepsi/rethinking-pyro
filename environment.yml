@@ -1,0 +1,8 @@
+name: rethinking
+dependencies:
+- jupyter
+- matplotlib
+- pandas
+- pytorch
+- pip:
+  - pyro-ppl
