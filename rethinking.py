@@ -4,36 +4,38 @@ import torch
 import pyro
 import pyro.distributions as dist
 import pyro.optim as optim
+import pyro.poutine as poutine
 from pyro.contrib.autoguide import AutoDelta
 from pyro.infer import SVI, Trace_ELBO
 
 
-class LinearModel(object):
+class LM(object):
 
-    def __init__(self, y, fit_intercept=True, **kwargs):
-        name = kwargs.pop("name", "")
-        self.y = y
-        self.y_name = pyro.params.param_with_module_name(name, "y")
+    def __init__(self, fit_intercept=True, **kwargs):
+        self.name = kwargs.pop("name", "")
+        self.y = kwargs.pop(list(kwargs)[-1])
         self.factors = kwargs
-        self.factor_names = {factor: pyro.params.param_with_module_name(name, factor)
-                             for factor in kwargs}
         self.fit_intercept = fit_intercept
-        if fit_intercept:
-            self.intercept_name = pyro.params.param_with_module_name(name, "intercept")
-            self.intercept_init = y.mean()
-        self.sigma = y.std()
+        self._sigma = self.y.std()
+        
+    def _get_coefs(self):
+        coefs = {factor: pyro.param(pyro.params.param_with_module_name(self.name, factor),
+                                    lambda: torch.tensor(0.)) for factor in self.factors}
+        if self.fit_intercept:
+            coefs["intercept"] = pyro.param(pyro.params.param_with_module_name(
+                self.name, "intercept"), lambda: self.y.mean())
+        return coefs
 
     def _get_y_pred(self):
-        weights = {factor: pyro.param(self.factor_names[factor], torch.tensor(0.))
-                   for factor in self.factors}
-        y_pred = sum([weights[factor] * self.factors[factor] for factor in self.factors])
+        coefs = self._get_coefs()
+        y_pred = sum([coefs[factor] * self.factors[factor] for factor in self.factors])
         if self.fit_intercept:
-            y_pred += pyro.param(self.intercept_name, self.intercept_init)
+            y_pred += coefs["intercept"]
         return y_pred
 
     def _model(self):
-        y_pred = self._get_y_pred()
-        pyro.sample(self.y_name, dist.Normal(y_pred, self.sigma), obs=self.y)
+        pyro.sample(pyro.params.param_with_module_name(self.name, "y"),
+                    dist.Normal(self._get_y_pred(), self._sigma), obs=self.y)
 
     def fit(self, lr=1, num_steps=1000):
         svi = SVI(self._model, lambda: None, optim.Adam({"lr": lr}), Trace_ELBO())
@@ -43,24 +45,25 @@ class LinearModel(object):
         return losses
 
     def coef(self):
-        weights = {factor: pyro.param(self.factor_names[factor], torch.tensor(0.)).detach()
-                   for factor in self.factors}
-        if self.fit_intercept:
-            weights["intercept"] = pyro.param(self.intercept_name,
-                                              self.intercept_init).detach()
-        return weights
+        coefs = self._get_coefs()
+        return {factor: coefs[factor].detach() for factor in coefs}
 
     def resid(self):
-        y_pred = self._get_y_pred()
-        return (self.y - y_pred).detach()
+        return (self.y - self._get_y_pred()).detach()
 
 
 class MAP(object):
 
-    def __init__(self, model, **kwargs):
+    def __init__(self, model, start={}, **kwargs):
         self.model = model
+        self._guide = AutoDelta(model, prefix=kwargs.pop("name", "auto"))
         self.kwargs = kwargs
-        self._guide = AutoDelta(model)
+        self._latents = []
+        for latent, site in poutine.trace(model).get_trace(**kwargs).iter_stochastic_nodes():
+            if latent in start:
+                pyro.param("{}_{}".format(self._guide.prefix, latent), self.start[latent],
+                           constraint=site["fn"].support)
+            self._latents.append(latent)
 
     def fit(self, lr=1, num_steps=1000):
         svi = SVI(self.model, self._guide, optim.Adam({"lr": lr}), Trace_ELBO())
@@ -69,25 +72,91 @@ class MAP(object):
             losses.append(svi.step(**self.kwargs))
         return losses
 
-    def precis(self, corr=False, digits=2, depth=None):
+    def coef(self):
         mean = self._guide.median()
-        mean = {latent: mean[latent].detach() for latent in mean}
-        corr = self._guide.covariance(**self.kwargs)
-        packed_mean = torch.cat([mean[latent].unsqueeze(0) for latent in mean])
-        packed_std_dev = corr.diag().sqrt()
-        packed_quantiles = dist.Normal(packed_mean, packed_std_dev).icdf(
-            torch.tensor([[0.055], [0.945]]))
-        std_dev = {}
-        quantile_5_5 = {}
-        quantile_94_5 = {}
-        for i, latent in enumerate(mean):
-            mean[latent] = mean[latent].numpy()
-            std_dev[latent] = packed_std_dev[i].numpy()
-            quantile_5_5[latent] = packed_quantiles[0, i].numpy()
-            quantile_94_5[latent] = packed_quantiles[1, i].numpy()
-        
-        return pd.DataFrame.from_dict({"Mean": mean, "StdDev": std_dev, "5.5%": quantile_5_5,
-                                       "94.5%": quantile_94_5}).round(digits)
+        return torch.cat([mean[latent].detach().unsqueeze(0) for latent in mean])
 
-    def extract_samples(self, n):
-        pass
+    def vcov(self):
+        return self._guide.covariance(**self.kwargs)
+
+    def precis(self, depth=1, prob=0.89, corr=False, digits=2):
+        packed_mean = self.coef()
+        cov = self.vcov()
+        packed_std_dev = cov.diag().sqrt()
+        left_prob, right_prob = (1 - prob) / 2, (1 + prob) / 2
+        packed_quantiles = dist.Normal(packed_mean, packed_std_dev).icdf(
+            torch.tensor([[left_prob], [right_prob]]))
+
+        mean, std_dev, quantile_left, quantile_right = {}, {}, {}, {}
+        for i, latent in enumerate(self._latents):
+            mean[latent] = packed_mean[i].numpy()
+            std_dev[latent] = packed_std_dev[i].numpy()
+            quantile_left[latent] = packed_quantiles[0, i].numpy()
+            quantile_right[latent] = packed_quantiles[1, i].numpy()
+
+        precis = pd.DataFrame.from_dict({"Mean": mean, "StdDev": std_dev,
+            "{:.1f}%".format(left_prob * 100): quantile_left,
+            "{:.1f}%".format(right_prob * 100): quantile_right})
+        if corr:
+            corr_matrix = cov / (packed_std_dev.unsqueeze(1) * packed_std_dev)
+            corr_dict = {}
+            for i, latent in enumerate(self._latents):
+                corr_dict[latent] = corr_matrix[:, i].numpy()
+            precis = precis.assign(**corr_dict)
+        return precis.astype("float").round(digits)
+
+    def extract_samples(self, n=10000):
+        packed_samples = dist.MultivariateNormal(self.coef(), self.vcov()).sample(
+            torch.Size([n]))
+        samples = {}
+        for i, latent in enumerate(self._latents):
+            samples[latent] = packed_samples[:, i]
+        return samples
+
+    def _get_factors_matrix(self, **kwargs):
+        factors_list = []
+        for factor in list(self.kwargs)[:-1]:
+            if factor in kwargs:
+                factors_list.append(kwargs[factor])
+            else:
+                factors_list.append(self.kwargs[factor])
+        factors_list.insert(0, torch.ones(factors_list[0].size(0)))
+        return torch.stack(factors_list)
+        
+    def link(self, n=1000, **kwargs):
+        factors_matrix = self._get_factors_matrix(**kwargs)
+        coefs_matrix = dist.MultivariateNormal(self.coef(), self.vcov()).sample(
+            torch.Size([n]))
+        return coefs_matrix[:, :-1].matmul(factors_matrix)
+    
+    def sim(self, n=1000, **kwargs):
+        factors_matrix = self._get_factors_matrix(**kwargs)
+        coefs_matrix = dist.MultivariateNormal(self.coef(), self.vcov()).sample(
+            torch.Size([n]))
+        mu = coefs_matrix[:, :-1].matmul(factors_matrix)
+        sigma = coefs_matrix[:, -1:]
+        return dist.Normal(mu, sigma).sample()
+
+
+def HPDI(samples, dim=-1, prob=0.89):
+    full_size = samples.size(dim)
+    mass = int(prob * full_size)
+    sorted_samples = samples.sort(dim)[0]
+    intervals = (sorted_samples.index_select(dim, torch.tensor(range(mass, full_size)))
+                 - sorted_samples.index_select(dim, torch.tensor(range(full_size - mass))))
+    start = intervals.argmin(dim)
+    indices = torch.stack([start, start + mass], dim)
+    return torch.gather(sorted_samples, dim, indices)
+
+
+def precis(samples, depth=1, prob=0.89, corr=False, digits=2):
+    mean, std_dev, hpd_left, hpd_right = {}, {}, {}, {}
+    for i, latent in enumerate(samples):
+        mean[latent] = samples[latent].mean().numpy()
+        std_dev[latent] = samples[latent].std().numpy()
+        hpdi = HPDI(samples[latent], prob)
+        hpd_left[latent] = hpdi[0].numpy()
+        hpd_right[latent] = hpdi[1].numpy()
+    return pd.DataFrame.from_dict({"Mean": mean, "StdDev": std_dev,
+        "|{:.2f}".format(prob): hpd_left,
+        "{:.2f}|".format(prob): hpd_right}).astype("float").round(digits)

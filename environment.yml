@@ -1,8 +1,9 @@
 name: rethinking
 dependencies:
+- python>=3.6
 - jupyter
 - matplotlib
 - pandas
-- pytorch
+- pytorch>=1.0
 - pip:
-  - pyro-ppl
+  - pyro-ppl>=0.2.2

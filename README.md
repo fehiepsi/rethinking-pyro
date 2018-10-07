@@ -12,11 +12,11 @@ To say a bit more about **Pyro**, it is a universal [probabilistic programming l
 
 + [Chapter 2. Small Worlds and Large Worlds](http://nbviewer.jupyter.org/github/fehiepsi/rethinking-pyro/blob/master/02_small_worlds_and_large_worlds.ipynb)
 
-+ [Chapter 3. Sampling the Imaginary]
++ [Chapter 3. Sampling the Imaginary](http://nbviewer.jupyter.org/github/fehiepsi/rethinking-pyro/blob/master/03_sampling_the_imaginary.ipynb)
 
-+ [Chapter 4. Linear Models]
++ [Chapter 4. Linear Models](http://nbviewer.jupyter.org/github/fehiepsi/rethinking-pyro/blob/master/04_linear_models.ipynb)
 
-+ [Chapter 5. Multivariate Linear Models]
++ [Chapter 5. Multivariate Linear Models](http://nbviewer.jupyter.org/github/fehiepsi/rethinking-pyro/blob/master/05_multivariate_linear_models.ipynb)
 
 + [Chapter 6. Overfitting, Regularization, and Information Criteria]
 
@@ -44,7 +44,7 @@ You might use `pip` to install the following packages:
 + `jupyter` for displaying code, visualizations, text in one place,
 + `pandas` for reading data,
 + `matplotlib` for plotting,
-+ `pytorch` for scientific computing,
++ `torch` for scientific computing,
 + `pyro-ppl` for probabilistic modeling.
 
 Or you can install [conda](https://conda.io/miniconda.html) and create a `rethinking` environment from the `environment.yml` file:
