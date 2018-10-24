@@ -8,7 +8,7 @@ To say a bit more about **Pyro**, it is a universal [probabilistic programming l
 
 + [Preface](http://nbviewer.jupyter.org/github/fehiepsi/rethinking-pyro/blob/master/notebooks/00_preface.ipynb)
 
-+ [Chapter 1. The Golem of Prague](http://nbviewer.jupyter.org/fehiepsi/fehiepsi/rethinking-pyro/blob/master/notebooks/01_the_golem_of_prague.ipynb)
++ [Chapter 1. The Golem of Prague](http://nbviewer.jupyter.org/github/fehiepsi/rethinking-pyro/blob/master/notebooks/01_the_golem_of_prague.ipynb)
 
 + [Chapter 2. Small Worlds and Large Worlds](http://nbviewer.jupyter.org/github/fehiepsi/rethinking-pyro/blob/master/notebooks/02_small_worlds_and_large_worlds.ipynb)
 

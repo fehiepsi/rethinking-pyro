@@ -97,7 +97,7 @@ class MAP(object):
     def vcov(self):
         return self._guide.covariance(**self.kwargs)
 
-    def precis(self, depth=1, prob=0.89, corr=False, digits=2):
+    def precis(self, prob=0.89, corr=False, digits=2, depth=1):
         packed_mean = self.coef(full=True)
         cov = self.vcov()
         packed_std_dev = cov.diag().sqrt()
