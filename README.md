@@ -18,13 +18,13 @@ To say a bit more about **Pyro**, it is a universal [probabilistic programming l
 
 + [Chapter 5. Multivariate Linear Models](http://nbviewer.jupyter.org/github/fehiepsi/rethinking-pyro/blob/master/notebooks/05_multivariate_linear_models.ipynb)
 
-+ [Chapter 6. Overfitting, Regularization, and Information Criteria]
++ [Chapter 6. Overfitting, Regularization, and Information Criteria](http://nbviewer.jupyter.org/github/fehiepsi/rethinking-pyro/blob/master/notebooks/06_overfitting_regularization_and_information_criteria.ipynb)
 
-+ [Chapter 7. Interactions]
++ [Chapter 7. Interactions](http://nbviewer.jupyter.org/github/fehiepsi/rethinking-pyro/blob/master/notebooks/07_interactions.ipynb)
 
 + [Chapter 8. Markov Chain Monte Carlo]
 
-+ [Chapter 9. Big Entropy and the Generalized Linear Model]
++ [Chapter 9. Big Entropy and the Generalized Linear Model](http://nbviewer.jupyter.org/github/fehiepsi/rethinking-pyro/blob/master/notebooks/09_big_entropy_and_the_generalized_linear_model.ipynb)
 
 + [Chapter 10. Counting and Classification]
 
