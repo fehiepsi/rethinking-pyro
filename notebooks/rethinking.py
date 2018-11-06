@@ -23,8 +23,13 @@ class MAP(object):
         self._guide = AutoDelta(model, prefix=name)
         self._kwargs = kwargs
         self._latent_shapes = {}
-        for latent, site in poutine.trace(model).get_trace(**kwargs).nodes.items():
-            if site["type"] == "sample" and not site["is_observed"]:
+        trace = poutine.trace(model).get_trace(**kwargs)
+        self._params = trace.param_nodes
+        for latent, site in trace.nodes.items():
+            if site["type"] == "sample":
+                if site["is_observed"]:
+                    self._obs = latent
+                    continue
                 if start == "mean":
                     mean = site["fn"].mean
                     if not torch.isnan(mean):
@@ -44,7 +49,7 @@ class MAP(object):
                 losses.append(svi.step(**self._kwargs))
         return losses
 
-    def coef(self, full=False, detach=True, guide_trace=None, model_trace=None):
+    def coef(self, detach=True, guide_trace=None, model_trace=None):
         if guide_trace is None:
             guide_trace = poutine.trace(self._guide).get_trace(**self._kwargs)
         if model_trace is None:
@@ -59,7 +64,7 @@ class MAP(object):
             elif latent_name in model_trace.nodes:
                 coef = model_trace.nodes[latent_name]["value"]
                 coefs[latent] = coef.detach() if detach else coef
-        return torch.cat([c.reshape(-1) for c in coefs.values()]) if full else coefs
+        return coefs
 
     def log_lik(self, detach=True, trace=False):
         guide_trace = poutine.trace(self._guide).get_trace(**self._kwargs)
@@ -77,7 +82,7 @@ class MAP(object):
 
     def precis(self, prob=0.89, corr=False, digits=2, depth=1):
         return_dict = False
-        packed_mean = self.coef(full=True)
+        packed_mean = torch.cat([c.reshape(-1) for c in self.coef().values()])
         cov = self.vcov()
         packed_std_dev = cov.diag().sqrt()
         packed_quantiles = dist.Normal(packed_mean, packed_std_dev).icdf(
@@ -134,11 +139,10 @@ class MAP(object):
         plt.axvline(x=0, c="k", alpha=0.2)
         plt.grid(axis="y", linestyle="--")
 
-    def extract_samples(self, n=10000, full=False):
-        coefs_matrix = dist.MultivariateNormal(self.coef(full=True),
-                                               self.vcov()).sample(torch.Size([n]))
-        if full:
-            return coefs_matrix
+    def extract_samples(self, n=10000):
+        coefs_matrix = dist.MultivariateNormal(
+            torch.cat([c.reshape(-1) for c in self.coef().values()]),
+            self.vcov()).sample(torch.Size([n]))
         samples = {}
         pos = 0
         for latent, shape in self._latent_shapes.items():
@@ -147,36 +151,31 @@ class MAP(object):
             pos = pos + numel
         return samples
 
-    def _get_factors_matrix(self, **kwargs):
-        factors_list = []
-        for factor in list(self._kwargs):
-            factors_list.append(kwargs[factor] if factor in kwargs else self._kwargs[factor])
-        tmp = torch.full(factors_list[0].shape, factors_list[-1].mean())
-        factors_list[-1] = factors_list[-1][:factors_list[0].size(0)]
-        tmp[:factors_list[-1].size(0)] = factors_list[-1]
-        factors_list[-1] = tmp
-        factors_list.insert(0, torch.ones(factors_list[0].size(0)))
-        return torch.stack(factors_list)
+    def _sim(self, n=1000, ret="sim", **kwargs):
+        factors = self._kwargs.copy()
+        factors.update(kwargs)
+        coefs = self.extract_samples(n)
+        r = []
+        for i in range(n):
+            lifted = poutine.lift(self._model, lambda: None)
+            conditioned = pyro.do(lifted, data={c: value[i] for c, value in coefs.items()})
+            trace = poutine.trace(conditioned).get_trace(**factors)
+            if ret == "link":
+                r.append(trace.nodes[self._obs]["fn"].loc)
+            elif ret == "sim":
+                r.append(trace.nodes[self._obs]["fn"].sample())
+            elif ret == "ll":
+                r.append(trace.nodes[self._obs]["fn"].log_prob(trace.nodes[self._obs]["value"]))
+        return torch.stack(r)
 
     def link(self, n=1000, **kwargs):
-        factors_matrix = self._get_factors_matrix(**kwargs)
-        coefs_matrix = self.extract_samples(n, full=True)
-        return coefs_matrix[:, :-1].matmul(factors_matrix[:-1])
+        return self._sim(n, "link", **kwargs)
 
-    def sim(self, n=1000, ll=False, **kwargs):
-        factors_matrix = self._get_factors_matrix(**kwargs)
-        coefs_matrix = self.extract_samples(n, full=True)
-        mu = coefs_matrix[:, :-1].matmul(factors_matrix[:-1])
-        if "sigma" in self._latent_shapes:
-            sigma = coefs_matrix[:, -1:]
-        else:
-            sigma = coefs_matrix[:, -1:].exp()
-        if ll:
-            return dist.Normal(mu, sigma).log_prob(factors_matrix[-1])
-        return dist.Normal(mu, sigma).sample()
+    def sim(self, n=1000, **kwargs):
+        return self._sim(n, "sim", **kwargs)
 
     def WAIC(self, n=1000, pointwise=False):
-        ll = self.sim(n=n, ll=True)
+        ll = self._sim(n, "ll", **kwargs)
         lppd = torch.logsumexp(ll, 0) - math.log(n)
         pWAIC = ll.var(0)
         waic_vec = -2 * (lppd - pWAIC)
@@ -315,7 +314,7 @@ def compare_plot(waic_df):
     plt.title("WAIC")
 
 
-def coeftab(PI=False, *models):
+def coeftab(*models, PI=False):
     coef_df = pd.concat([m.precis().stack() for m in models], axis=1, sort=False)
     coef_df.columns = [m._name for m in models]
     mean_df = coef_df.unstack().xs("Mean", axis=1, level=1)
