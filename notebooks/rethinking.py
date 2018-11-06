@@ -5,13 +5,14 @@ import warnings
 import matplotlib.pyplot as plt
 import pandas as pd
 import torch
-from torch.distributions import constraints
+from torch.distributions import biject_to, constraints
 
 import pyro
 import pyro.distributions as dist
 import pyro.optim as optim
 import pyro.poutine as poutine
-from pyro.contrib.autoguide import AutoDelta, _hessian
+from pyro.contrib.autoguide import AutoDelta
+from pyro.contrib.util import hessian
 from pyro.infer import SVI, Trace_ELBO
 
 
@@ -25,17 +26,23 @@ class MAP(object):
         self._latent_shapes = {}
         trace = poutine.trace(model).get_trace(**kwargs)
         self._params = trace.param_nodes
+        self._obs = trace.observation_nodes[0]
         for latent, site in trace.nodes.items():
-            if site["type"] == "sample":
-                if site["is_observed"]:
-                    self._obs = latent
-                    continue
-                if start == "mean":
-                    mean = site["fn"].mean
-                    if not torch.isnan(mean):
-                        pyro.param("{}_{}".format(name, latent), mean, site["fn"].support)
-                elif latent in start:
-                    pyro.param("{}_{}".format(name, latent), start[latent], site["fn"].support)
+            if site["type"] == "sample" and not site["is_observed"]:
+                if latent in start:
+                    init = start[latent]
+                else:
+                    if isinstance(site["fn"], dist.Cauchy):
+                        median = site["fn"].loc
+                    elif isinstance(site["fn"], dist.HalfCauchy):
+                        median = site["fn"].scale
+                    else:
+                        median = site["fn"].mean
+                    transform = biject_to(site["fn"].support)
+                    unconstrained = transform.inv(median)
+                    init = transform(unconstrained
+                                     + torch.empty(unconstrained.shape).uniform_(-2, 2))
+                pyro.param("{}_{}".format(name, latent), init, site["fn"].support)
                 self._latent_shapes[latent] = site["value"].shape
             elif site["type"] == "param":
                 self._latent_shapes[latent.replace("{}_".format(name), "")] = site["value"].shape
@@ -77,7 +84,7 @@ class MAP(object):
     def vcov(self):
         loss, guide_trace, model_trace = self.log_lik(detach=False, trace=True)
         coefs = self.coef(detach=False, guide_trace=guide_trace, model_trace=model_trace)
-        H = _hessian(loss, coefs.values())
+        H = hessian(loss, coefs.values())
         return torch.inverse(H)
 
     def precis(self, prob=0.89, corr=False, digits=2, depth=1):
@@ -117,7 +124,7 @@ class MAP(object):
 
         precis = pd.DataFrame.from_dict(precis_dict)
         if corr:
-            corr_matrix = cov / (packed_std_dev.unsqueeze(1) * packed_std_dev)
+            corr_matrix = cov / (packed_std_dev.ger(packed_std_dev))
             corr_dict = {}
             pos = 0
             for latent, shape in self._latent_shapes.items():
@@ -193,7 +200,7 @@ class LM(MAP):
         self._fit_intercept = True if kwargs.pop("intercept", 1) == 1 else False
         for latent in start:
             pyro.param("{}_{}".format(name, latent), start[latent])
-        super(LM, self).__init__(name, self._model, {}, **kwargs)
+        super(LM, self).__init__(name, self._model, **kwargs)
 
     def _model(self, **kwargs):
         y_pred = 0
@@ -208,7 +215,7 @@ class LM(MAP):
             y_pred = y_pred + coef * value
 
 
-def dens(samples, adj=0.5, c=None, lw=None, xlab=None):
+def dens(samples, adj=0.5, plot=True, c=None, lw=None, xlab=None):
     bw_factor = (0.75 * samples.size(0)) ** (-0.2)
     bw = adj * bw_factor * samples.std()
     x_min = samples.min()
@@ -216,6 +223,8 @@ def dens(samples, adj=0.5, c=None, lw=None, xlab=None):
     x = torch.linspace(x_min, x_max, 1000)
     y = dist.Normal(samples, bw).log_prob(x.unsqueeze(-1)).logsumexp(-1).exp()
     y = y / y.sum() * (x.size(0) / (x_max - x_min))
+    if not plot:
+        return x, y
     plt.plot(x.tolist(), y.tolist(), c=c, lw=lw)
     plt.xlabel(xlab)
     plt.ylabel("Density")
