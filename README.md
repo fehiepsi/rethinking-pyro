@@ -22,7 +22,7 @@ To say a bit more about **Pyro**, it is a universal [probabilistic programming l
 
 + [Chapter 7. Interactions](http://nbviewer.jupyter.org/github/fehiepsi/rethinking-pyro/blob/master/notebooks/07_interactions.ipynb)
 
-+ [Chapter 8. Markov Chain Monte Carlo]
++ [Chapter 8. Markov Chain Monte Carlo](http://nbviewer.jupyter.org/github/fehiepsi/rethinking-pyro/blob/master/notebooks/08_markov_chain_monte_carlo.ipynb) (in progress)
 
 + [Chapter 9. Big Entropy and the Generalized Linear Model](http://nbviewer.jupyter.org/github/fehiepsi/rethinking-pyro/blob/master/notebooks/09_big_entropy_and_the_generalized_linear_model.ipynb)
 
@@ -37,6 +37,68 @@ To say a bit more about **Pyro**, it is a universal [probabilistic programming l
 + [Chapter 14. Missing Data and Other Opportunities]
 
 + [Chapter 15. Horoscopes](http://nbviewer.jupyter.org/github/fehiepsi/rethinking-pyro/blob/master/notebooks/15_horoscopes.ipynb)
+
+## Usage
+
+For convenience, I wrap most used classes and functions in the `notebooks/rethinking.py` script. The functions `dens` (kernel density estimation), `quantile`, `PI` (percentile interval), `HPDI` (highest posterior density interval), `precis` are used to summarize samples obtained from the modelling. `compare`, `coeftab`, `ensemble` are for comparing and ensembling models. I use PyTorch to get the results for most of these functions.
+
+### Linear model
+
+You can define a linear model of distance over speed in `cars` dataset as follow.
+
+```
+# make sure cars_speed and cars_dist are torch.tensor
+m = LM("m", speed=cars_speed, dist=cars_dist)
+
+# fit the model
+m.fit()
+```
+
+Because we have to do inference for many models in one notebook, the first argument of `LM` is its name. It is unique for each model in a notebook and it helps avoid confliction of parameters of different models.
+
+Note that under the hood, I use the **centering** trick (as discussed in the Section 7.3 of the book). For me, this is one of the best tricks ever in doing statistics. Without this trick, it is impossible for me to fit the first few models in Chapter 6 (after an enormous amount of wasted time to spend on defining priors, optimizers, learning rate,...).
+
+### MAP
+
+To do [maximum a posteriori inference](https://en.wikipedia.org/wiki/Maximum_a_posteriori_estimation), you can use the class `MAP` as follows.
+
+```
+# define a Pyronic model
+def model(weight, height):
+    a = pyro.sample("a", dist.Normal(178, 100))
+    b = pyro.sample("b", dist.Normal(0, 10))
+    mu = a + b * weight
+    sigma = pyro.sample("sigma", dist.Uniform(0, 50))
+    with pyro.plate("plate"):
+        pyro.sample("height", dist.Normal(a + b * weight, sigma), obs=height)
+
+# feed the model and data into MAP
+m = MAP("m", model, weight=weight, height=height)
+
+# optimize parameters
+m.fit()
+
+# summarize the result, use `corr=True` to display the correlation
+m.precis(corr=True)
+```
+
+There are something shoud be noted about `MAP`. The `with pyro.plate(...):` statement is used to tell Pyro that the variables in its context are conditionally independent (see [pyro.plate docs](http://docs.pyro.ai/en/dev/primitives.html#pyro.plate)). Without this statement, Pyro will throw some error about shape of `log_prob` at the `height` site. When you use Pyro, it is recommended to enable validation (by calling `pyro.enable_validation()`) to detect this kind of error (and other errors such as value of a distribution is outside of its support).
+
+To generate latent samples from quadratic approximation, you can call `m.extract_samples(n=1000)`. Other methods such as `m.link()`, `m.sim()`, `m.WAIC()` are derived from these latent samples. Their functionalities are the same as in the book.
+
+If you take a look at the code, you will notice that there are many `poutine.foo` statements. These effect handlers are quite flexible tools to do inference. You might be confused about how to use them at the first glance but after playing with them for a while, you'll fall in love with them. Please checkout [theirs docs](http://docs.pyro.ai/en/dev/poutine.html) for more information.
+
+### Optimization
+
+In Pyro, we often use stochastic optimizers such as `SGD`, `Adam`,... to optimize parameters. These optimizers are good for models with large dataset. However, for models with small dataset as in the book, I have a hard time to fit them using the above optimizers. Tuning learning rate, number of iterations,... does not help at all (the error `sigma` is usually exploded), so I use [LBFGS](https://pytorch.org/docs/stable/optim.html#torch.optim.LBFGS) instead. It turns out that optimum values are obtained easily with `LBFGS` without having to tuning anything.
+
+### Initialization
+
+In Pyro, initial latent variables are generated randomly from priors. However, I found that such initialization strategy is not good for models in the book. So I follow the Stan way to initialize latent variables randomly from the interval $\pm 2$ around the median point in the unconstrained space (see [Stan reference manual](https://github.com/stan-dev/stan/releases/download/v2.18.0/reference-manual-2.18.0.pdf)). It helps for many cases!
+
+### HMC
+
+in progress...
 
 ## Setup
 

@@ -1,8 +1,10 @@
 name: rethinking
+channels:
+- pytorch
 dependencies:
 - jupyter
 - matplotlib
 - pandas
-- pytorch>=1.0
+- pytorch-nightly-cpu
 - pip:
-  - pyro-ppl>=0.3
+  - git+https://github.com/uber/pyro

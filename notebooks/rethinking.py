@@ -1,7 +1,3 @@
-import math
-import logging
-import warnings
-
 import matplotlib.pyplot as plt
 import pandas as pd
 import torch
@@ -9,22 +5,22 @@ from torch.distributions import biject_to, constraints
 
 import pyro
 import pyro.distributions as dist
-import pyro.optim as optim
 import pyro.poutine as poutine
 from pyro.contrib.autoguide import AutoDelta
 from pyro.contrib.util import hessian
-from pyro.infer import SVI, Trace_ELBO
+from pyro.infer import Trace_ELBO
 
 
 class MAP(object):
 
     def __init__(self, name, model, start={}, **kwargs):
-        self._name = name
+        self.name = name
         self._model = model
         self._guide = AutoDelta(model, prefix=name)
         self._kwargs = kwargs
         self._latent_shapes = {}
-        trace = poutine.trace(model).get_trace(**kwargs)
+        self._latent_names = {}
+        trace = poutine.util.prune_subsample_sites(poutine.trace(model).get_trace(**kwargs))
         self._params = trace.param_nodes
         self._obs = trace.observation_nodes[0]
         for latent, site in trace.nodes.items():
@@ -42,21 +38,28 @@ class MAP(object):
                     unconstrained = transform.inv(median)
                     init = transform(unconstrained
                                      + torch.empty(unconstrained.shape).uniform_(-2, 2))
+                    init = site["value"]
                 pyro.param("{}_{}".format(name, latent), init, site["fn"].support)
                 self._latent_shapes[latent] = site["value"].shape
+                self._latent_names[latent] = latent
             elif site["type"] == "param":
                 self._latent_shapes[latent.replace("{}_".format(name), "")] = site["value"].shape
+                self._latent_names[latent] = latent
 
-    def fit(self, lr=1, num_steps=1000):
-        svi = SVI(self._model, self._guide, optim.Adam({"lr": lr}), Trace_ELBO())
-        losses = []
-        with warnings.catch_warnings():
-            warnings.filterwarnings("once", "Encountered NaN: loss", UserWarning)
-            for _ in range(num_steps):
-                losses.append(svi.step(**self._kwargs))
-        return losses
+    def fit(self, lr=0.1, max_iter=500):
+        elbo = Trace_ELBO()
+        with poutine.trace(param_only=True) as param_capture:
+            elbo.loss_and_grads(self._model, self._guide, **self._kwargs)
+        params = set(site["value"].unconstrained() for site in param_capture.trace.nodes.values())
+        optim = torch.optim.LBFGS(params, lr, max_iter)
 
-    def coef(self, detach=True, guide_trace=None, model_trace=None):
+        def closure():
+            pyro.infer.util.zero_grads(params)
+            return elbo.loss_and_grads(self._model, self._guide, **self._kwargs)
+
+        optim.step(closure)
+
+    def _coef(self, detach=True, guide_trace=None, model_trace=None):
         if guide_trace is None:
             guide_trace = poutine.trace(self._guide).get_trace(**self._kwargs)
         if model_trace is None:
@@ -64,14 +67,17 @@ class MAP(object):
                 poutine.replay(self._model, trace=guide_trace)).get_trace(**self._kwargs)
         coefs = {}
         for latent in self._latent_shapes:
-            latent_name = "{}_{}".format(self._name, latent)
-            if latent_name in guide_trace.nodes:
-                coef = guide_trace.nodes[latent_name]["value"]
+            param_name = "{}_{}".format(self.name, latent)
+            if param_name in guide_trace.nodes:
+                coef = guide_trace.nodes[param_name]["value"]
                 coefs[latent] = coef.detach() if detach else coef
-            elif latent_name in model_trace.nodes:
-                coef = model_trace.nodes[latent_name]["value"]
+            elif param_name in model_trace.nodes:
+                coef = model_trace.nodes[param_name]["value"]
                 coefs[latent] = coef.detach() if detach else coef
         return coefs
+
+    def coef(self):
+        return self._coef()
 
     def log_lik(self, detach=True, trace=False):
         guide_trace = poutine.trace(self._guide).get_trace(**self._kwargs)
@@ -79,16 +85,18 @@ class MAP(object):
             poutine.replay(self._model, trace=guide_trace)).get_trace(**self._kwargs)
         loss = -model_trace.log_prob_sum()
         loss = loss.detach() if detach else loss
-        return (loss, guide_trace, model_trace) if trace else loss 
+        return (loss, guide_trace, model_trace) if trace else loss
 
-    def vcov(self):
+    def _vcov(self):
         loss, guide_trace, model_trace = self.log_lik(detach=False, trace=True)
-        coefs = self.coef(detach=False, guide_trace=guide_trace, model_trace=model_trace)
+        coefs = self._coef(detach=False, guide_trace=guide_trace, model_trace=model_trace)
         H = hessian(loss, coefs.values())
         return torch.inverse(H)
 
-    def precis(self, prob=0.89, corr=False, digits=2, depth=1):
-        return_dict = False
+    def vcov(self):
+        return self._vcov()
+
+    def precis(self, prob=0.89, corr=False, digits=2):
         packed_mean = torch.cat([c.reshape(-1) for c in self.coef().values()])
         cov = self.vcov()
         packed_std_dev = cov.diag().sqrt()
@@ -99,29 +107,17 @@ class MAP(object):
         pos = 0
         for latent, shape in self._latent_shapes.items():
             numel = shape.numel()
-            if depth == 1 and numel > 1:
-                return_dict = True
-                next_pos = pos + numel
-                mean[latent] = packed_mean[pos:next_pos].tolist()
-                std_dev[latent] = packed_std_dev[pos:next_pos].tolist()
-                lower_quantile[latent] = packed_quantiles[0, pos:next_pos].tolist()
-                upper_quantile[latent] = packed_quantiles[1, pos:next_pos].tolist()
-                pos = next_pos
-            else:
-                for i in range(numel):
-                    name = "{}[{}]".format(latent, i) if numel > 1 else latent
-                    mean[name] = packed_mean[pos].item()
-                    std_dev[name] = packed_std_dev[pos].item()
-                    lower_quantile[name] = packed_quantiles[0, pos].item()
-                    upper_quantile[name] = packed_quantiles[1, pos].item()
-                    pos = pos + 1
+            for i in range(numel):
+                name = "{}[{}]".format(latent, i) if numel > 1 else latent
+                mean[name] = packed_mean[pos].item()
+                std_dev[name] = packed_std_dev[pos].item()
+                lower_quantile[name] = packed_quantiles[0, pos].item()
+                upper_quantile[name] = packed_quantiles[1, pos].item()
+                pos = pos + 1
 
         precis_dict = {"Mean": mean, "StdDev": std_dev,
                        "{:.1f}%".format((1 - prob) * 50): lower_quantile,
                        "{:.1f}%".format((1 + prob) * 50): upper_quantile}
-        if return_dict:
-            return precis_dict
-
         precis = pd.DataFrame.from_dict(precis_dict)
         if corr:
             corr_matrix = cov / (packed_std_dev.ger(packed_std_dev))
@@ -146,10 +142,10 @@ class MAP(object):
         plt.axvline(x=0, c="k", alpha=0.2)
         plt.grid(axis="y", linestyle="--")
 
-    def extract_samples(self, n=10000):
+    def _extract_samples(self, n=10000):
         coefs_matrix = dist.MultivariateNormal(
-            torch.cat([c.reshape(-1) for c in self.coef().values()]),
-            self.vcov()).sample(torch.Size([n]))
+            torch.cat([c.reshape(-1) for c in self._coef().values()]),
+            self._vcov()).sample(torch.Size([n]))
         samples = {}
         pos = 0
         for latent, shape in self._latent_shapes.items():
@@ -158,19 +154,27 @@ class MAP(object):
             pos = pos + numel
         return samples
 
+    def extract_samples(self, n=10000):
+        return self._extract_samples(n)
+
     def _sim(self, n=1000, ret="sim", **kwargs):
         factors = self._kwargs.copy()
-        factors.update(kwargs)
-        coefs = self.extract_samples(n)
+        for f in factors:
+            if f in kwargs:
+                factors[f] = kwargs[f]
+        coefs = self._extract_samples(n)
         r = []
+        link_shape = (list(kwargs.values())[-1].shape
+                      if kwargs else list(self._kwargs.values())[-1].shape)
         for i in range(n):
-            lifted = poutine.lift(self._model, lambda: None)
-            conditioned = pyro.do(lifted, data={c: value[i] for c, value in coefs.items()})
+            lifted = poutine.lift(self._model, dist.Normal(0, 1))
+            conditioned = pyro.condition(lifted, data={self._latent_names[c]: value[i]
+                                                       for c, value in coefs.items()})
             trace = poutine.trace(conditioned).get_trace(**factors)
             if ret == "link":
-                r.append(trace.nodes[self._obs]["fn"].loc)
+                r.append(trace.nodes[self._obs]["fn"].mean.expand(link_shape))
             elif ret == "sim":
-                r.append(trace.nodes[self._obs]["fn"].sample())
+                r.append(trace.nodes[self._obs]["fn"].sample().expand(link_shape))
             elif ret == "ll":
                 r.append(trace.nodes[self._obs]["fn"].log_prob(trace.nodes[self._obs]["value"]))
         return torch.stack(r)
@@ -182,8 +186,8 @@ class MAP(object):
         return self._sim(n, "sim", **kwargs)
 
     def WAIC(self, n=1000, pointwise=False):
-        ll = self._sim(n, "ll", **kwargs)
-        lppd = torch.logsumexp(ll, 0) - math.log(n)
+        ll = self._sim(n, "ll")
+        lppd = torch.logsumexp(ll, 0) - torch.tensor(float(n)).log()
         pWAIC = ll.var(0)
         waic_vec = -2 * (lppd - pWAIC)
         WAIC = waic_vec.sum()
@@ -198,6 +202,7 @@ class LM(MAP):
 
     def __init__(self, name, start={}, **kwargs):
         self._fit_intercept = True if kwargs.pop("intercept", 1) == 1 else False
+        self._kwargs_mean = torch.stack([kwargs[factor].mean() for factor in kwargs])
         for latent in start:
             pyro.param("{}_{}".format(name, latent), start[latent])
         super(LM, self).__init__(name, self._model, **kwargs)
@@ -205,14 +210,33 @@ class LM(MAP):
     def _model(self, **kwargs):
         y_pred = 0
         if self._fit_intercept:
-            y_pred = pyro.param("{}_intercept".format(self._name), lambda: torch.tensor(0.))
+            y_pred = pyro.param("{}_intercept".format(self.name), lambda: self._kwargs_mean[-1])
         for i, (factor, value) in enumerate(kwargs.items()):
             if i == len(kwargs) - 1:
-                sigma = pyro.param("{}_sigma".format(self._name), lambda: value.std(),
+                sigma = pyro.param("{}_sigma".format(self.name), lambda: value.std(),
                                    constraints.positive)
-                return pyro.sample(factor, dist.Normal(y_pred, sigma), obs=value)
-            coef = pyro.param("{}_{}".format(self._name, factor), lambda: torch.tensor(0.))
-            y_pred = y_pred + coef * value
+                with pyro.plate("plate"):
+                    return pyro.sample(factor, dist.Normal(y_pred, sigma), obs=value)
+            coef = pyro.param("{}_{}".format(self.name, factor), lambda: torch.tensor(0.))
+            y_pred = y_pred + coef * (value - self._kwargs_mean[i])
+
+    def coef(self):
+        coefs = self._coef()
+        coefs["intercept"] = coefs["intercept"] - torch.stack(
+            list(coefs.values())[1:-1]).dot(self._kwargs_mean[:-1])
+        return coefs
+
+    def vcov(self):
+        vcov = self._vcov()
+        transform = torch.eye(vcov.size(0))
+        transform[0, 1:-1] = self._kwargs_mean[:-1]
+        return transform.matmul(vcov).matmul(transform.t())
+
+    def extract_samples(self, n=10000):
+        samples = self._extract_samples(n)
+        samples["intercept"] = samples["intercept"] - torch.stack(
+            list(samples.values())[1:-1], dim=1).matmul(self._kwargs_mean[:-1])
+        return samples
 
 
 def dens(samples, adj=0.5, plot=True, c=None, lw=None, xlab=None):
@@ -280,7 +304,8 @@ def glimmer(family="normal", **kwargs):
         mu_str += "b_{} * {}".format(latent, latent)
     print(mu_str)
     print("    sigma = pyro.sample('sigma', dist.HalfCauchy(2))")
-    print("    return pyro.sample('{}', dist.Normal(mu, sigma), obs={})"
+    print("    with pyro.plate('plate'):")
+    print("        return pyro.sample('{}', dist.Normal(mu, sigma), obs={})"
           .format(args[-1], args[-1]))
 
 
@@ -288,8 +313,8 @@ def compare(*models):
     WAIC_dict, WAIC_vec = {}, {}
     for m in models:
         WAIC = m.WAIC(pointwise=True)
-        WAIC_vec[m._name] = WAIC.pop("WAIC_vec")
-        WAIC_dict[m._name] = {w_name: w.item() for w_name, w in WAIC.items()}
+        WAIC_vec[m.name] = WAIC.pop("WAIC_vec")
+        WAIC_dict[m.name] = {w_name: w.item() for w_name, w in WAIC.items()}
     df = pd.DataFrame.from_dict(WAIC_dict).T.sort_values(by="WAIC")
     df["dWAIC"] = df["WAIC"] - df["WAIC"][0]
     weight = (-0.5 * torch.tensor(df["dWAIC"].values, dtype=torch.float)).exp()
@@ -325,14 +350,14 @@ def compare_plot(waic_df):
 
 def coeftab(*models, PI=False):
     coef_df = pd.concat([m.precis().stack() for m in models], axis=1, sort=False)
-    coef_df.columns = [m._name for m in models]
+    coef_df.columns = [m.name for m in models]
     mean_df = coef_df.unstack().xs("Mean", axis=1, level=1)
     keys = []
     for m in models:
         keys += list(m._latent_shapes)
     keys = list(dict.fromkeys(keys))
     mean_df = mean_df.loc[keys, :]
-    mean_df.loc["nobs"] = [list(m._kwargs.values())[-1].size(0) for m in models]
+    mean_df.loc["nobs"] = [m.sim(n=1).size(-1) for m in models]
     if PI:
         lower_PI = coef_df.unstack().xs("5.5%", axis=1, level=1).loc[keys, :]
         upper_PI = coef_df.unstack().xs("94.5%", axis=1, level=1).loc[keys, :]
@@ -342,11 +367,12 @@ def coeftab(*models, PI=False):
 
 def ensemble(data, *models):
     n = int(1e3)
+    shape = (n, list(data.values())[0].size(0))
     WAIC_df = compare(*models)
     weight = torch.tensor(WAIC_df["weight"].values, dtype=torch.float)
-    models_dict = {m._name: m for m in models}
-    links = [models_dict[m].link(**data, n=n) for m in WAIC_df.index]
-    sims = [m.sim(**data, n=n) for m in models]
+    models_dict = {m.name: m for m in models}
+    links = [models_dict[m].link(**data, n=n).reshape(n, -1).expand(shape) for m in WAIC_df.index]
+    sims = [models_dict[m].sim(**data, n=n).reshape(n, -1).expand(shape) for m in WAIC_df.index]
     index = torch.cat([torch.tensor([0]),
                        (weight.cumsum(0) * n).round().long().clamp(max=n)])
     weighted_link = torch.cat([l[index[i]:index[i + 1]] for i, l in enumerate(links)])
