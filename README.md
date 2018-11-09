@@ -40,7 +40,7 @@ To say a bit more about **Pyro**, it is a universal [probabilistic programming l
 
 ## Usage
 
-For convenience, I wrap most used classes and functions in the `notebooks/rethinking.py` script. The functions `dens` (kernel density estimation), `quantile`, `PI` (percentile interval), `HPDI` (highest posterior density interval), `precis` are used to summarize samples obtained from the modelling. `compare`, `coeftab`, `ensemble` are for comparing and ensembling models. I use PyTorch to get the results for most of these functions.
+For convenience, I wrap most used classes and functions in the [rethinking.py](./notebooks/rethinking.py) script. The functions `dens` (kernel density estimation), `quantile`, `PI` (percentile interval), `HPDI` (highest posterior density interval), `precis` are used to summarize samples obtained from the modelling. `compare`, `coeftab`, `ensemble` are for comparing and ensembling models. I use PyTorch to get the results for most of these functions.
 
 ### Linear model
 
@@ -48,7 +48,7 @@ You can define a linear model of distance over speed in `cars` dataset as follow
 
 ```
 # make sure cars_speed and cars_dist are torch.tensor
-m = LM("m", speed=cars_speed, dist=cars_dist)
+m = LM("m", mass=mass, brain=brain)
 
 # fit the model
 m.fit()
@@ -56,7 +56,13 @@ m.fit()
 
 Because we have to do inference for many models in one notebook, the first argument of `LM` is its name. It is unique for each model in a notebook and it helps avoid confliction of parameters of different models.
 
-Note that under the hood, I use the **centering** trick (as discussed in the Section 7.3 of the book). For me, this is one of the best tricks ever in doing statistics. Without this trick, it is impossible for me to fit the first few models in Chapter 6 (after an enormous amount of wasted time to spend on defining priors, optimizers, learning rate,...).
+Note that under the hood, I use the **centering** trick (as discussed in the Section 7.3 of the book). In my opinion, this is one of the best tricks ever in doing statistics! For example, without this trick, it is impossible for me to fit a linear regression model on the following brain~mass dataset:
+
+```
+# try it yourself: build a model to fit the brain over mass :)
+mass = torch.tensor([37.0, 35.5, 34.5, 41.5, 55.5, 61.0, 53.5])
+brain = torch.tensor([438., 452, 612, 521, 752, 871, 1350])
+```
 
 ### MAP
 
@@ -90,11 +96,13 @@ If you take a look at the code, you will notice that there are many `poutine.foo
 
 ### Optimization
 
-In Pyro, we often use stochastic optimizers such as `SGD`, `Adam`,... to optimize parameters. These optimizers are good for models with large dataset. However, for models with small dataset as in the book, I have a hard time to fit them using the above optimizers. Tuning learning rate, number of iterations,... does not help at all (the error `sigma` is usually exploded), so I use [LBFGS](https://pytorch.org/docs/stable/optim.html#torch.optim.LBFGS) instead. It turns out that optimum values are obtained easily with `LBFGS` without having to tuning anything.
+In Pyro, we often use stochastic optimizers such as `SGD`, `Adam`,... to optimize parameters. These optimizers are good for models with large dataset. However, for models with small dataset as in the book, I have a hard time to fit them using the above optimizers. Tuning learning rate, number of iterations,... does not help at all (the error `sigma` is usually exploded), so I use [LBFGS](https://pytorch.org/docs/stable/optim.html#torch.optim.LBFGS) instead. It turns out that optimum values are obtained easily with `LBFGS` without having to tuning anything!
 
 ### Initialization
 
 In Pyro, initial latent variables are generated randomly from priors. However, I found that such initialization strategy is not good for models in the book. So I follow the Stan way to initialize latent variables randomly from the interval $\pm 2$ around the median point in the unconstrained space (see [Stan reference manual](https://github.com/stan-dev/stan/releases/download/v2.18.0/reference-manual-2.18.0.pdf)). It helps for many cases!
+
+If you want to feed start values for latent variables, just simply put them into the `start` argument in the definition of MAP. For example, you can do `m = MAP("m", model, start={"a": torch.tensor(0.)}, ...)`.
 
 ### HMC
 
@@ -102,14 +110,14 @@ in progress...
 
 ## Setup
 
-You might use `pip install -r requirements.txt` to install the following packages:
+You might use `pip install -r requirements.txt` (not recommended for now) to install the following packages:
 + `jupyter` for displaying code, visualizations, text in one place,
 + `pandas` for reading data,
 + `matplotlib` for plotting,
 + `torch` for scientific computing,
 + `pyro-ppl` for probabilistic modeling.
 
-Or you can install [conda](https://conda.io/miniconda.html) and create a `rethinking` environment from the `environment.yml` file:
+Or you can use [conda](https://conda.io/miniconda.html) to create a `rethinking` environment from the `environment.yml` file:
 ```sh
 conda env create -f environment.yml
 ```
