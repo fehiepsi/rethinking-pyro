@@ -5,6 +5,7 @@ dependencies:
 - jupyter
 - matplotlib
 - pandas
-- pytorch-nightly-cpu
+- pytorch
+- seaborn
 - pip:
-  - git+https://github.com/uber/pyro
+  - pyro-ppl
