@@ -1088,3 +1088,7 @@ div.rendered_html > div.navigation > p {
   text-align: center;
 }
 
+a.navbar-brand {
+  margin-right: unset;
+}
+
