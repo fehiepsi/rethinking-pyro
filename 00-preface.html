@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html prefix="og: http://ogp.me/ns# article: http://ogp.me/ns/article# " lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code 0.1 | Statistical Rethinking with Pyro</title>
+<link href="assets/css/all-nocdn.css" rel="stylesheet" type="text/css">
+<link href="assets/css/ipython.min.css" rel="stylesheet" type="text/css">
+<link href="assets/css/nikola_ipython.css" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=Playfair+Display:700,900" rel="stylesheet">
+<meta name="theme-color" content="#5670d4">
+<meta name="generator" content="Nikola (getnikola.com)">
+<link rel="alternate" type="application/rss+xml" title="RSS" href="rss.xml">
+<link rel="canonical" href="https://fehiepsi.github.io/rethinking-pyro/00-preface.html">
+<!--[if lt IE 9]><script src="assets/js/html5.js"></script><![endif]--><meta name="author" content="fehiepsi">
+<meta property="og:site_name" content="Statistical Rethinking with Pyro">
+<meta property="og:title" content="Code 0.1">
+<meta property="og:url" content="https://fehiepsi.github.io/rethinking-pyro/00-preface.html">
+<meta property="og:description" content="&lt;  | Contents | 01_the_golem_of_prague.ipynb &gt;
+
+
+
+
+
+
+In [1]:
+
+    
+%matplotlib inline
+import matplotlib.pyplot as plt
+import pandas as pd
+import torch
+
+import pyro
+
+from rethinking import LM
+
+plt.rcPa">
+<meta property="og:type" content="article">
+<meta property="article:published_time" content="2019-01-06T21:30:17-05:00">
+</head>
+<body>
+<a href="#content" class="sr-only sr-only-focusable">Skip to main content</a>
+
+<!-- Header and menu bar -->
+<div class="container">
+      <header class="blog-header py-3"><div class="row nbb-header align-items-center">
+          <div class="col-md-3 col-xs-2 col-sm-2" style="width: auto;">
+            <button class="navbar-toggler navbar-light bg-light nbb-navbar-toggler" type="button" data-toggle="collapse" data-target=".bs-nav-collapsible" aria-controls="bs-navbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse bs-nav-collapsible bootblog4-search-form-holder">
+                
+            </div>
+        </div>
+          <div class="col-md-6 col-xs-10 col-sm-10 bootblog4-brand" style="width: auto;">
+            <a class="navbar-brand blog-header-logo text-dark" href="https://fehiepsi.github.io/rethinking-pyro/">
+
+            <span id="blog-title">Statistical Rethinking with Pyro</span>
+        </a>
+          </div>
+            <div class="col-md-3 justify-content-end align-items-center bs-nav-collapsible collapse flex-collapse bootblog4-right-nav">
+            <nav class="navbar navbar-light bg-white"><ul class="navbar-nav bootblog4-right-nav"></ul></nav>
+</div>
+    </div>
+</header><nav class="navbar navbar-expand-md navbar-light bg-white static-top"><div class="collapse navbar-collapse bs-nav-collapsible" id="bs-navbar">
+            <ul class="navbar-nav nav-fill d-flex w-100"></ul>
+</div>
+<!-- /.navbar-collapse -->
+</nav>
+</div>
+
+<div class="container" id="content" role="main">
+    <div class="body-content">
+        <!--Body content-->
+        
+        
+<article class="post-text storypage" itemscope="itemscope" itemtype="http://schema.org/Article"><header><h1 class="p-name entry-title" itemprop="headline name"><a href="#" class="u-url">Code 0.1</a></h1>
+
+        
+
+    </header><div class="e-content entry-content" itemprop="articleBody text">
+    <div tabindex="-1" id="notebook" class="border-box-sizing">
+    <div class="container" id="notebook-container">
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><!-- NAVIGATION -->
+&lt; <a href="#"></a> | <a href="index.html">Contents</a> | <a href="01-the-golem-of-prague.html">01_the_golem_of_prague.ipynb</a> &gt;</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [1]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="kn">import</span> <span class="nn">pyro</span>
+
+<span class="kn">from</span> <span class="nn">rethinking</span> <span class="k">import</span> <span class="n">LM</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s2">"axes.labelsize"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"large"</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s2">"lines.linewidth"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">pyro</span><span class="o">.</span><span class="n">enable_validation</span><span class="p">()</span>
+<span class="n">pyro</span><span class="o">.</span><span class="n">set_rng_seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [2]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">"All models are wrong, but some are useful."</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>All models are wrong, but some are useful.
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Code-0.2">Code 0.2<a class="anchor-link" href="00-preface.html#Code-0.2">¶</a>
+</h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [3]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">10</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">log</span><span class="p">()</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span>
+<span class="n">x</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+    <div class="prompt output_prompt">Out[3]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor(200.0000)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Code-0.3">Code 0.3<a class="anchor-link" href="00-preface.html#Code-0.3">¶</a>
+</h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [4]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span><span class="o">.</span><span class="n">log</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="mi">200</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span><span class="o">.</span><span class="n">log</span><span class="p">())</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>tensor(-inf)
+tensor(-921.0341)
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Code-0.4">Code 0.4<a class="anchor-link" href="00-preface.html#Code-0.4">¶</a>
+</h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [5]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Load the data:</span>
+<span class="c1"># car braking distances in feet paired with speeds in km/h</span>
+<span class="c1"># see cars.info() for details</span>
+<span class="n">cars</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"../data/cars.csv"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">cars_speed</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">cars</span><span class="p">[</span><span class="s2">"speed"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+<span class="n">cars_dist</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">cars</span><span class="p">[</span><span class="s2">"dist"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+
+<span class="c1"># fit a linear regression of distance on speed</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">LM</span><span class="p">(</span><span class="s2">"m"</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="n">cars_speed</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="n">cars_dist</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+
+<span class="c1"># estimated coefficients from the model</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">coef</span><span class="p">())</span>
+
+<span class="c1"># plot residuals against speed</span>
+<span class="n">resid</span> <span class="o">=</span> <span class="n">cars_dist</span> <span class="o">-</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">coef</span><span class="p">()[</span><span class="s2">"intercept"</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">coef</span><span class="p">()[</span><span class="s2">"speed"</span><span class="p">]</span> <span class="o">*</span> <span class="n">cars_speed</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cars_speed</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">resid</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="s2">"o"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">"speed"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">"residual"</span><span class="p">);</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>{'intercept': tensor(-17.6297), 'speed': tensor(3.9357), 'sigma': tensor(15.0752)}
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAY0AAAENCAYAAADzFzkJAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAADl0RVh0U29mdHdhcmUAbWF0cGxvdGxpYiB2ZXJzaW9uIDMuMC4wLCBodHRwOi8vbWF0cGxvdGxpYi5vcmcvqOYd8AAAG8JJREFUeJzt3X+QXeV93/H3x4uMF4d0wSwYrZAlx2SntpVYyYJpxDgu4K5/o6g4xXUc3Hoqt8G1mUxVJOOkJA2RHKU4pM3YVU1mcAvGBAtBwamAkV27ngBZIWKBZRkZsKWVCnLw8iPeEmn59o97Vrpa7949d++P55x7Pq+Znb33OffHd8/e+3zPeZ7nPI8iAjMzszxekToAMzMrDycNMzPLzUnDzMxyc9IwM7PcnDTMzCw3Jw0zM8vNScPMzHJz0jAzs9ycNMzMLLeTUgfQbmeccUYsW7YsdRhmZqWyc+fOH0XE4HyP67mksWzZMsbGxlKHYWZWKpJ+kOdxbp4yM7PcnDTMzCw3Jw0zM8vNScPMzHJz0jAzs9x6bvSUmVkZbds1zubtezk4McnigX7WjQ6zeuVQ6rB+ipOGmVli23aNs2HrbiaPTAEwPjHJhq27AQqXOJw0zNqgLEeJVkybt+89ljCmTR6ZYvP2vYX7HDlpmLWoTEeJVkwHJyabKk/JHeFmLWp0lGiWx+KB/qbKU3LSMGtRmY4SrZjWjQ7Tv6jvhLL+RX2sGx1OFNHcnDTMWlSmo0QrptUrh9i4ZgVDA/0IGBroZ+OaFYVs3nSfhlmL1o0On9CnAcU9SrTiWr1yqJBJYqZCnWlI6pO0S9Ld2f3lkh6U9LikL0t6ZeoYzWYq01GiWauKdqbxSWAP8LPZ/c8An42IWyV9Hvgo8LlUwZnNpSxHiWatKsyZhqQlwHuAL2T3BVwE3J495CZgdZrozMwMCpQ0gD8B/j3wcnb/NcBERBzN7h8AfChnZpZQIZKGpPcCz0TEzvriWR4aczx/raQxSWOHDx/uSIxmZlaQpAGsAt4v6SngVmrNUn8CDEia7ndZAhyc7ckRsSUiRiJiZHBw3iVuzcxsgQqRNCJiQ0QsiYhlwOXAjoj4EPA14LLsYVcAdyYK0czMKEjSaOBq4Lcl7aPWx3Fj4njMzCqtaENuiYivA1/Pbj8BnJ8yHjMzO67oZxpmZlYgThpmZpabk4aZmeXmpGFmZrk5aZiZWW5OGmZmlpuThpmZ5eakYWZmuTlpmJlZbk4aZmaWm5OGmZnl5qRhZma5OWmYmVluThpmZpabk4aZmeXmpGFmZrk5aZiZWW6FW7nPzIpr265xNm/fy8GJSRYP9LNudJjVK4dSh2Vd5KRhZrls2zXOhq27mTwyBcD4xCQbtu4GcOKokEI0T0l6laSHJP2NpMck/V5WvlzSg5Iel/RlSa9MHatZVW3evvdYwpg2eWSKzdv3JorIUihE0gBeAi6KiF8E3gK8U9IFwGeAz0bEucCPgY8mjNGs0g5OTDZVbr2pEEkjal7M7i7KfgK4CLg9K78JWJ0gPDMDFg/0N1VuvakQSQNAUp+kR4BngPuA7wMTEXE0e8gBYNaGU0lrJY1JGjt8+HB3AjarmHWjw/Qv6juhrH9RH+tGhxNFZCkUJmlExFREvAVYApwP/MPZHjbHc7dExEhEjAwODnYyTLPKWr1yiI1rVjA00I+AoYF+Nq5Z4U7wiinc6KmImJD0deACYEDSSdnZxhLgYNLgzCpu9cohJ4mKK8SZhqRBSQPZ7X7gEmAP8DXgsuxhVwB3ponQzMygOGcaZwM3Seqjlshui4i7JX0HuFXSHwC7gBtTBmlmVnWFSBoR8W1g5SzlT1Dr3zAzswIoRPOUmZmVg5OGmZnl5qRhZma5OWmYmVluThpmZpabk4aZmeXmpGFmZrk5aZiZWW5OGmZmlpuThpmZ5eakYWZmuRVi7ikzK4dtu8bZvH0vBycmWTzQz7rRYU+VXjFOGmZtUIXKdNuucTZs3c3kkSkAxicm2bB1N0DP/a02NzdPmbVoujIdn5gkOF6Zbts1njq0ttq8fe+xhDFt8sgUm7fvTRSRpeCkYdaiqlSmBycmmyq33uSkYdaiqlSmiwf6myq33uSkYdaiqlSm60aH6V/Ud0JZ/6I+1o0OJ4rIUnDSMGtRVSrT1SuH2LhmBUMD/QgYGuhn45oV7gSvmEKMnpJ0DvBF4LXAy8CWiLhB0unAl4FlwFPAr0fEj1PFaTab6Uqz10dPQe1v7cW/y/JTRKSOAUlnA2dHxMOSTgV2AquBjwDPRsQmSeuB0yLi6kavNTIyEmNjYx2P2cysl0jaGREj8z2uEM1TEXEoIh7Obr8A7AGGgEuBm7KH3UQtkZiZWSKFSBr1JC0DVgIPAmdFxCGoJRbgzHSRmZlZoZKGpJ8BvgJcFRHPN/G8tZLGJI0dPny4cwGamVVcYZKGpEXUEsbNEbE1K3466++Y7vd4ZrbnRsSWiBiJiJHBwcHuBGxmVkGFSBqSBNwI7ImI6+s23QVckd2+Ariz27GZmdlxhRhyC6wCPgzslvRIVvYpYBNwm6SPAj8EPpAoPjMzoyBJIyL+D6A5Nl/czVjMzGxuhWieMjOzcnDSMDOz3ArRPGVmVnVlWcjLScPMLLEyrYro5ikzs8TKtJCXk4aZWWJlWsjLScPMLLGBUxY1VZ6Sk4aZWWJzrVBRgJUrfoqThplZYs9NHmmqPCUnDTOzxMq0znzDIbeSXp/nRSLiifaEY2ZWPetGh08YcgvFXWd+vus09gHB3PNCkW3va1tEZmYVU6Z15hsmjYhw85VVSoqrcstyJbB11uqVQ6X4v/uK8BIqUyVTtli7fVVuma4ENoMmkoakk4DfAn4VOIO6JquIeFv7Q+seV2ydUaZYofFVuZ2KN8V7mrWimeanzwIfA74B/DK1pVnPBHZ0IK6uma7YxicmCY5XbNt2jacObVZlmm6gTLFCmqtyy3QlsBk0lzTWAO+KiBuAo9nv1cA/7khkXeKKrXPKFCukGfZYpqGWZtBc0jgF2J/dnpR0SkR8F1jZ/rC6xxVb55QpVqgNe+xfdOJAwE4Pe0zxnqls2zXOqk07WL7+HlZt2lHYs3lrrJmksQc4L7s9Blwr6dNAW/7zkv5c0jOSHq0rO13SfZIez36f1o73queKrXPKFCvU+lk2rlnB0EA/AoYG+tm4ZkVH+xZSvGcKZWsGtrkpck5uIuk8YCoiHpZ0LvA54FTg30XEN1sORHob8CLwxYh4c1b2R8CzEbFJ0nrgtIi4utHrjIyMxNjYWO73ndlZC7WKrchf3LJ13JclVuucVZt2MD7L2fvQQD/fWn9RgohsJkk7I2Jk3sflTRrdIGkZcHdd0tgLvD0iDkk6G/h6RDQ8TG02aYArNrNOW77+HmaraQQ8uek93Q7HZpE3aTQz5HbOw4GI6NQIqrMi4lD2HockndmJNynLRTVmZbV4oH/WM42iNgPb3Jq5uO/GGfcHgVcCB4Bcc1R1iqS1wFqApUuXpgzFzGZRprmVrLHcSSMiltffl9QHfBp4od1B1Xla0tl1zVPPzBHbFmAL1JqnOhiPmS1AmeZWssYWPI1IRExJuo7amcb17QvpBHcBVwCbst93duh9zKzD3AzcG1qdkPAdwMvtCETSl4C/AoYlHZD0UWrJ4h2SHs/ea1M73svMzBammY7w/XDCAIhTgFdRm4+qZRHxwTk2XdyO1zczs9Y10zz1GzPu/x3wvYh4vo3xmJlZgTXTEf6/OxmImZkV33zLvf53mPWanBNExG+2LSIzMyus+TrC9wHfz36eozarbR+1EVOvAC4FJjoZoJmZFcd8y73+3vRtSduB99TPMyXpQuB3OheemZkVSTNDbi8AHphR9iDwj9oXjpmZFVkzSWMX8IeS+gGy39cBj3QiMDMzK55mksZHgFXAc5KeptbHcSHgTnAzs4poZsjtU8CvSFoKnA0ciogfdiow6w2edt6s87r5PZtvyK0iW3BD0vRZyYHs51hZRLRlKpFUXLF1xswFrqZXawO8f83apNvfs/map56ru30UODLjZ7qstLwMZeds3r73hKmwASaPTLF5+95EEZn1nm5/z+ZrnnpT3e3lcz6qxBrtcB8Nt+bgLIvuNCo3m41bAhrr9vdsvus09tfd/kH9tmz01FRE/H1HIusSV2yd49Xaek+3K3A3cc6v29+z3KOnJP2xpPOz2+8BngUmJL2vI5F1yVw7thcrtm27xlm1aQfL19/Dqk07Ot4Et250mP5FfSeUNbNaW7fjtcZSNOW6iXN+rX7PmtXMkNsPAY9mt3+X2qy37wf+sN1BdVO3d3gqKb7wq1cOsXHNCoYG+hEwNNDPxjUrch0huq+peFJU4G4JmF8r37OFaGZq9FMi4ieSXgO8PiK+AiDpdR2JrEuqsgxlqr6bha7W5r6m4klRgbuJM59urorYTNL4nqQPAW8A7gOQdAZQ+pRfhWUoy3bEVrZ4qyBFBb5udPiEPg3ozZaAMmmmeeq3gCuBizg+SeEocG+7g7L2K1vfTdniLZuF9BelaMrtdtOLzU/ZtXs9Y2RkJMbGxlKHUTgzR6FA7Qtf1C9gqng/vW03X3pwP1MR9El88K3n8AerV3Ts/VJoZd96+GvvkrQzIkbme1wzzVNIegdwOXBmRLxP0gjwsxGxY4Fx5n3fdwI3UFvL4wsRsamT79eLytZ3kyLeT2/bzf944PjMOFMRx+73UuJopb+oCk251ljupCHp3wKfBL4AXJYVTwJ/CvxK+0M79r59wJ8B76A2fclfS7orIr7TqffsVWX7wnc73i89uH/O8l5KGu4vslY006dxFXBJdpQ/PdfUd4FO90idD+yLiCeyCwlvpbZioFlbTc3RVDtXeVm5v8ha0UzSOBWYPhSb/hYtAjp9RfhQ3ftC7WzjhMNPSWsljUkaO3z4cIfDsV7VJzVVXlZVuTbJOqOZpPFNYP2Msk8AX2tfOLOa7Rt7wqFfRGyJiJGIGBkcHOxwONarPvjWc5oqr1emq9c9Isla0UxH+FXAHZL+FXCqpL3A80CnpxE5ANR/a5cABzv8nlZiCx3hM91v0ezoqTLOj1S2/i0rjlxDbrPO6BeB04FfAJZSazJ6qNNraUg6CfgecDEwDvw18M8j4rHZHu8ht9WWYqjuqk07Zr3obWign2+tv6gj72nWbnmH3OZqnoqIKWoV92kR8WBE/EVEPNCNxZci4ijwcWA7sAe4ba6EYeb5kcw6q5nmqZuBuyXdQK3J6NgpSqev04iIrwJf7eR7WG/w/EjWDr6IcW7NJI1/k/2+dkZ5AK9vSzRmLfL8SNaqMvZRdVPu0VMRsXyOHycMKwzPj2St8hoejTU1jYhZs7p9mp9quhSPRuod7qNqzEnDOibVab4rcGuF+6gaa+biPrOm+DTfyshXzDfmMw3rGJ/mWztUpYmzLJw0rGN8mt9ZVRgW6ibO4nHzlHVMqtP8Ms0DtVDTlen4xCTB8cq01/5WN3EWj880SqgsR5gpTvOrMsa+lYWUysRNnMXjpFEyZasUu32a78q0typTN3EWj5unSsan641VqTJtprysqjSSqSzNqk4aJVOVSnGhXJn2VmValavty9RH5eapkvHpemOtzgPl/qLiqcJIpjI1qzpplEyqyfGqUJm6v8hSKVMLgpNGyXhE0vwWWpmW6WjPekuZWhCcNEqoKiOSun12U6ajPestZZpe30nD5pWiMk1xdlOmo70qKUvTaCvK1EflpGHzSlGZpji7KdPRXqvKUhGXrWm0FWXpo0o+5FbSByQ9JullSSMztm2QtE/SXkmjqWKsuhTDO1s5u1noeHcP7yze8E5fl1Q8RTjTeBRYA/zX+kJJbwQuB94ELAbul/TzETH10y9hnZTi1HmhZzetHpmW5WivFWXq8Hc/U/EkTxoRsQdA0sxNlwK3RsRLwJOS9gHnA3/V3QgNul+ZLrSpqEwVYiplqojdz1Q8yZunGhgC9tfdP5CVWQUstKmoTBViKmW6ar4qV76XSVfONCTdD7x2lk3XRMSdcz1tlrKY4/XXAmsBli5duqAYrXgWcnbjI9P5tdLh30oH+kKeW6ZRRVXRlaQREZcs4GkHgHPq7i8BDs7x+luALQAjIyOzJharBl8xP7+FVsSt9Be18twq9DOVSfI+jQbuAm6RdD21jvBzgYfShmRF5yvm81lIRdxKf5H7mnpH8qQh6deA/wwMAvdIeiQiRiPiMUm3Ad8BjgJXeuSU5VGVK+a7rZX+Ivc19Y7kHeERcUdELImIkyPirIgYrdt2XUT8XEQMR8RfpozTbC5VqRBb6UAvU+e7NZY8aZiVXVUqxFZGMrXy3LIsTlQVyZunzMquKp3vrfQXpeh8t85QRG8NNhoZGYmxsbHUYVjFdLsCn1mZQi1R9dq0J6s27Zh1CPXQQD/fWn9Rgoh6l6SdETEy3+N8pmHWBu5874yq9BeVifs0zEqoKpVpVfqLysRJw6yEqlKZehqR4nHSMEtsIaODqlKZVmW6+jJxn4b1nDJN6bHQ0UFVmpPJ04gUi5OG9ZSyDdFspUPblaml4OYp6yllW+mtKh3a1jucNKynlK0SrkqHtvUOJw3rKWWrhKvSoW29w0nDekrZKuFUo4M8n5MtlDvCraeUcVRRtzu0yzZYwIrFScN6jkcVNVaVKUisM9w8ZVYxZRssYMXiMw2zilk80D/rzLFFHSxQNmW6uHQhfKZhVjFlGyxQJtP9ReMTkwTH+4t6aaBB8qQhabOk70r6tqQ7JA3UbdsgaZ+kvZJGG72OmeXj+Zw6p2wXly5EEZqn7gM2RMRRSZ8BNgBXS3ojcDnwJmAxcL+kn4+IqQavZWY5eLBAZ1Shvyj5mUZE3BsRR7O7DwBLstuXArdGxEsR8SSwDzg/RYxmZnmU7eLShUieNGb4l8BfZreHgP112w5kZWZmhVSF/qKuNE9Juh947SybromIO7PHXAMcBW6eftosj591QXNJa4G1AEuXLm05XjNrv14fVQTlvLi0WV1JGhFxSaPtkq4A3gtcHBHTieEAcE7dw5YAB+d4/S3AFoCRkZFZE4tZUVWhMq3SVei93l+UvHlK0juBq4H3R8RP6jbdBVwu6WRJy4FzgYdSxGjWKVUYognVGFVUFcmTBvBfgFOB+yQ9IunzABHxGHAb8B3gfwFXeuSU9ZqqVKZVGFVUFcmH3EbEGxpsuw64rovhmHVVVSpTX4XeO4pwpmFWWVUYognVGFVUFU4aZglVpTL1Vei9I3nzlFmVVWGI5rReH1VUFU4aZom5MrUycfOUmZnl5qRhZma5OWmYmVluThpmZpabk4aZmeXmpGFmZrk5aZiZWW5OGmZmlpuThpmZ5eakYWZmuTlpmJlZbk4aZmaWm5OGmZnl5lluzazQtu0ar8TU8WXhpGFmhbVt1zgbtu4+to76+MQkG7buBnDiSCR585Sk/yjp25IekXSvpMVZuST9qaR92fZfSh2rmXXX5u17jyWMaZNHpti8fW+iiCx50gA2R8QvRMRbgLuB383K3wWcm/2sBT6XKD4zS+TgxGRT5dZ5yZNGRDxfd/fVQGS3LwW+GDUPAAOSzu56gGaWzOKB/qbKrfOSJw0ASddJ2g98iONnGkPA/rqHHcjKZnv+WkljksYOHz7c2WDNrGvWjQ7Tv6jvhLL+RX2sGx1OFJF1JWlIul/So7P8XAoQEddExDnAzcDHp582y0vFLGVExJaIGImIkcHBwc78EWbWdatXDrFxzQqGBvoRMDTQz8Y1K9wJnlBXRk9FxCU5H3oLcA/wH6idWZxTt20JcLDNoZlZwa1eOeQkUSDJm6cknVt39/3Ad7PbdwG/mY2iugB4LiIOdT1AMzM7pgjXaWySNAy8DPwA+NdZ+VeBdwP7gJ8A/yJNeGZmNi150oiIfzpHeQBXdjkcMzNrIHnzlJmZlYeThpmZ5aZaK1DvkHSYWt9It50B/CjB+5aF98/8vI8a8/6ZXyv76HURMe81Cz2XNFKRNBYRI6njKCrvn/l5HzXm/TO/buwjN0+ZmVluThpmZpabk0b7bEkdQMF5/8zP+6gx75/5dXwfuU/DzMxy85mGmZnl5qTRBpKekrQ7W31wLHU8qUn6c0nPSHq0rux0SfdJejz7fVrKGFObYx9dK2k8+xw9IundKWNMSdI5kr4maY+kxyR9Miv354iG+6fjnyE3T7WBpKeAkYjwGHJA0tuAF6ktovXmrOyPgGcjYpOk9cBpEXF1yjhTmmMfXQu8GBF/nDK2IsgWXDs7Ih6WdCqwE1gNfAR/jhrtn1+nw58hn2lY20XEN4BnZxRfCtyU3b6J2ge8subYR5aJiEMR8XB2+wVgD7VF2Pw5ouH+6TgnjfYI4F5JOyWtTR1MQZ01PbV99vvMxPEU1cclfTtrvqpk08tMkpYBK4EH8efop8zYP9Dhz5CTRnusiohfAt4FXJk1PZg163PAzwFvAQ4B/yltOOlJ+hngK8BVEfF86niKZpb90/HPkJNGG0TEwez3M8AdwPlpIyqkp7N22On22GcSx1M4EfF0RExFxMvAf6PinyNJi6hViDdHxNas2J+jzGz7pxufISeNFkl6ddYRhaRXA/8EeLTxsyrpLuCK7PYVwJ0JYymk6cow82tU+HMkScCNwJ6IuL5ukz9HzL1/uvEZ8uipFkl6PbWzC6gtanVLRFyXMKTkJH0JeDu1GTefprbm+zbgNmAp8EPgAxFR2Y7gOfbR26k1KwTwFPCxqi5xLOlC4JvAbmqregJ8ilq7feU/Rw32zwfp8GfIScPMzHJz85SZmeXmpGFmZrk5aZiZWW5OGmZmlpuThpmZ5eakYVYS2WzKl6SOw6rNScPMzHJz0jAzs9ycNMxyknR1tsDNC5L2Sro4W/TmdklfzsoflvSLdc9ZLOkrkg5LelLSJ+q2vULSeknfl/S3km6TdHrd9g9L+kG27Zpu/71ms3HSMMtB0jDwceC8iDgVGKU2TQPU1nj4C+B04BZgm6RFkl4B/E/gb6itdXAxcJWk0ex5n6C2HsSvAouBHwN/lr3fG6nNWPrhbNtrgCWd/SvN5uekYZbPFHAy8EZJiyLiqYj4frZtZ0TcHhFHgOuBVwEXAOcBgxHx+xHx9xHxBLWZRy/Pnvcx4JqIOBARLwHXApdJOgm4DLg7Ir6Rbfsdjs8xZJbMSakDMCuDiNgn6SpqFfubJG0HfjvbvL/ucS9LOkDt7CCAxZIm6l6qj9pEcwCvA+6QVJ8MpoCzsufXv+7fSfrb9v5VZs3zmYZZThFxS0RcSK2yD+Az2aZzph+TNUktAQ5Sq/SfjIiBup9TI+Ld2cP3A++asf1VETFObQGd+tc9hVoTlVlSThpmOUgalnSRpJOB/wdMUjsrAPhlSWuyZqWrgJeAB4CHgOezDvR+SX2S3izpvOx5nweuk/S67D0GJV2abbsdeK+kCyW9Evh9/H21AvCH0Cyfk4FNwI+A/0ttbepPZdvuBP4ZtY7sDwNrIuJIREwB76O2vsGT2XO/APyD7Hk3UFtU6F5JL1BLNG8FiIjHgCupdawfyl77QGf/RLP5eT0NsxZIuhZ4Q0T8RupYzLrBZxpmZpabk4aZmeXm5ikzM8vNZxpmZpabk4aZmeXmpGFmZrk5aZiZWW5OGmZmlpuThpmZ5fb/AXAUUN/+IAg9AAAAAElFTkSuQmCC">
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Code-0.5">Code 0.5<a class="anchor-link" href="00-preface.html#Code-0.5">¶</a>
+</h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [6]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="ch">#!pip install jupyter matplotlib pandas pyro-ppl torch</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><!-- NAVIGATION -->
+&lt; <a href="#"></a> | <a href="index.html">Contents</a> | <a href="01-the-golem-of-prague.html">01_the_golem_of_prague.ipynb</a> &gt;</p>
+
+</div>
+</div>
+</div>
+    </div>
+  </div>
+
+    </div>
+    
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML" integrity="sha256-SDRP1VVYu+tgAGKhddBSl5+ezofHKZeI+OzxakbIe/Y=" crossorigin="anonymous"></script><script type="text/x-mathjax-config">
+        MathJax.Hub.Config({tex2jax: {inlineMath: [['$latex ','$'], ['\\(','\\)']]}});
+        </script></article><!--End of body content--><footer id="footer"><div class="text-center">
+  Contents © 2019         <a href="mailto:fehiepsi@gmail.com">Du Phan</a> - Powered by         <a href="https://getnikola.com" rel="nofollow">Nikola</a>         
+<a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+  <img alt="Creative Commons License BY-NC-SA" style="border-width:0; margin-bottom:12px;" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png"></a>
+
+</div>
+
+            
+        </footer>
+</div>
+</div>
+
+
+        <script src="assets/js/all-nocdn.js"></script><!-- fancy dates --><script>
+    moment.locale("en");
+    fancydates(0, "YYYY-MM-DD HH:mm");
+    </script><!-- end fancy dates --><script>
+    baguetteBox.run('div#content', {
+        ignoreClass: 'islink',
+        captions: function(element) {
+            return element.getElementsByTagName('img')[0].alt;
+    }});
+    </script><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=UA-131299125-1"></script><script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-131299125-1');
+</script>
+</body>
+</html>

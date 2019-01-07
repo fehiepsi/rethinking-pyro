@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html prefix="og: http://ogp.me/ns# article: http://ogp.me/ns/article# " lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code 9.1 | Statistical Rethinking with Pyro</title>
+<link href="assets/css/all-nocdn.css" rel="stylesheet" type="text/css">
+<link href="assets/css/ipython.min.css" rel="stylesheet" type="text/css">
+<link href="assets/css/nikola_ipython.css" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=Playfair+Display:700,900" rel="stylesheet">
+<meta name="theme-color" content="#5670d4">
+<meta name="generator" content="Nikola (getnikola.com)">
+<link rel="alternate" type="application/rss+xml" title="RSS" href="rss.xml">
+<link rel="canonical" href="https://fehiepsi.github.io/rethinking-pyro/09-big-entropy-and-the-generalized-linear-model.html">
+<!--[if lt IE 9]><script src="assets/js/html5.js"></script><![endif]--><meta name="author" content="fehiepsi">
+<meta property="og:site_name" content="Statistical Rethinking with Pyro">
+<meta property="og:title" content="Code 9.1">
+<meta property="og:url" content="https://fehiepsi.github.io/rethinking-pyro/09-big-entropy-and-the-generalized-linear-model.html">
+<meta property="og:description" content='&lt; Code 8.1 | Contents | 15_horoscopes.ipynb &gt;
+
+
+
+
+
+
+In [1]:
+
+    
+%matplotlib inline
+import matplotlib.pyplot as plt
+import torch
+
+import pyro
+
+from rethinking import dens
+
+plt.rcParams["axes.labelsiz'>
+<meta property="og:type" content="article">
+<meta property="article:published_time" content="2019-01-06T21:30:17-05:00">
+</head>
+<body>
+<a href="#content" class="sr-only sr-only-focusable">Skip to main content</a>
+
+<!-- Header and menu bar -->
+<div class="container">
+      <header class="blog-header py-3"><div class="row nbb-header align-items-center">
+          <div class="col-md-3 col-xs-2 col-sm-2" style="width: auto;">
+            <button class="navbar-toggler navbar-light bg-light nbb-navbar-toggler" type="button" data-toggle="collapse" data-target=".bs-nav-collapsible" aria-controls="bs-navbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse bs-nav-collapsible bootblog4-search-form-holder">
+                
+            </div>
+        </div>
+          <div class="col-md-6 col-xs-10 col-sm-10 bootblog4-brand" style="width: auto;">
+            <a class="navbar-brand blog-header-logo text-dark" href="https://fehiepsi.github.io/rethinking-pyro/">
+
+            <span id="blog-title">Statistical Rethinking with Pyro</span>
+        </a>
+          </div>
+            <div class="col-md-3 justify-content-end align-items-center bs-nav-collapsible collapse flex-collapse bootblog4-right-nav">
+            <nav class="navbar navbar-light bg-white"><ul class="navbar-nav bootblog4-right-nav"></ul></nav>
+</div>
+    </div>
+</header><nav class="navbar navbar-expand-md navbar-light bg-white static-top"><div class="collapse navbar-collapse bs-nav-collapsible" id="bs-navbar">
+            <ul class="navbar-nav nav-fill d-flex w-100"></ul>
+</div>
+<!-- /.navbar-collapse -->
+</nav>
+</div>
+
+<div class="container" id="content" role="main">
+    <div class="body-content">
+        <!--Body content-->
+        
+        
+<article class="post-text storypage" itemscope="itemscope" itemtype="http://schema.org/Article"><header><h1 class="p-name entry-title" itemprop="headline name"><a href="#" class="u-url">Code 9.1</a></h1>
+
+        
+
+    </header><div class="e-content entry-content" itemprop="articleBody text">
+    <div tabindex="-1" id="notebook" class="border-box-sizing">
+    <div class="container" id="notebook-container">
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><!-- NAVIGATION -->
+&lt; <a href="08-markov-chain-monte-carlo.html">Code 8.1</a> | <a href="index.html">Contents</a> | <a href="15-horoscopes.html">15_horoscopes.ipynb</a> &gt;</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [1]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="kn">import</span> <span class="nn">pyro</span>
+
+<span class="kn">from</span> <span class="nn">rethinking</span> <span class="k">import</span> <span class="n">dens</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s2">"axes.labelsize"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"large"</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s2">"lines.linewidth"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">pyro</span><span class="o">.</span><span class="n">enable_validation</span><span class="p">()</span>
+<span class="n">pyro</span><span class="o">.</span><span class="n">set_rng_seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [2]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">p</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">p</span><span class="p">[</span><span class="s2">"A"</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="n">p</span><span class="p">[</span><span class="s2">"B"</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="n">p</span><span class="p">[</span><span class="s2">"C"</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="n">p</span><span class="p">[</span><span class="s2">"D"</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="n">p</span><span class="p">[</span><span class="s2">"E"</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">2.</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Code-9.2">Code 9.2<a class="anchor-link" href="09-big-entropy-and-the-generalized-linear-model.html#Code-9.2">¶</a>
+</h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [3]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">p_norm</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="p">(</span><span class="n">q</span> <span class="o">/</span> <span class="n">q</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">p</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Code-9.3">Code 9.3<a class="anchor-link" href="09-big-entropy-and-the-generalized-linear-model.html#Code-9.3">¶</a>
+</h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [4]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">H</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="o">-</span><span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">q</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">0.</span><span class="p">),</span> <span class="n">q</span> <span class="o">*</span> <span class="n">q</span><span class="o">.</span><span class="n">log</span><span class="p">())</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+     <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">p_norm</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<span class="n">H</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+    <div class="prompt output_prompt">Out[4]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>{'A': tensor(-0.),
+ 'B': tensor(0.6390),
+ 'C': tensor(0.9503),
+ 'D': tensor(1.4708),
+ 'E': tensor(1.6094)}</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Code-9.4">Code 9.4<a class="anchor-link" href="09-big-entropy-and-the-generalized-linear-model.html#Code-9.4">¶</a>
+</h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [5]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ways</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="mi">1260</span><span class="p">,</span> <span class="mi">37800</span><span class="p">,</span> <span class="mi">113400</span><span class="p">])</span>
+<span class="n">logwayspp</span> <span class="o">=</span> <span class="n">ways</span><span class="o">.</span><span class="n">log</span><span class="p">()</span> <span class="o">/</span> <span class="mi">10</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Code-9.5">Code 9.5<a class="anchor-link" href="09-big-entropy-and-the-generalized-linear-model.html#Code-9.5">¶</a>
+</h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [6]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># build tensor of the candidate distributions</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">1</span><span class="o">/</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="mi">4</span><span class="p">])</span>
+<span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">2</span><span class="o">/</span><span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="o">/</span><span class="mi">6</span><span class="p">])</span>
+<span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">1</span><span class="o">/</span><span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="o">/</span><span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="o">/</span><span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="mi">6</span><span class="p">])</span>
+<span class="n">p</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">1</span><span class="o">/</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="o">/</span><span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="o">/</span><span class="mi">8</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="mi">8</span><span class="p">])</span>
+
+<span class="c1"># compute expected value of each</span>
+<span class="p">(</span><span class="n">p</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+    <div class="prompt output_prompt">Out[6]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor([1., 1., 1., 1.])</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Code-9.6">Code 9.6<a class="anchor-link" href="09-big-entropy-and-the-generalized-linear-model.html#Code-9.6">¶</a>
+</h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [7]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># compute entropy of each distribution</span>
+<span class="o">-</span><span class="p">(</span><span class="n">p</span> <span class="o">*</span> <span class="n">p</span><span class="o">.</span><span class="n">log</span><span class="p">())</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+    <div class="prompt output_prompt">Out[7]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor([1.3863, 1.3297, 1.3297, 1.2130])</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Code-9.7">Code 9.7<a class="anchor-link" href="09-big-entropy-and-the-generalized-linear-model.html#Code-9.7">¶</a>
+</h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [8]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">p</span> <span class="o">=</span> <span class="mf">0.7</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">p</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span> <span class="o">*</span> <span class="n">p</span><span class="p">,</span> <span class="n">p</span> <span class="o">**</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">A</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+    <div class="prompt output_prompt">Out[8]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor([0.0900, 0.2100, 0.2100, 0.4900])</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Code-9.8">Code 9.8<a class="anchor-link" href="09-big-entropy-and-the-generalized-linear-model.html#Code-9.8">¶</a>
+</h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [9]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">-</span><span class="p">(</span><span class="n">A</span> <span class="o">*</span> <span class="n">A</span><span class="o">.</span><span class="n">log</span><span class="p">())</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+    <div class="prompt output_prompt">Out[9]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor(1.2217)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Code-9.9">Code 9.9<a class="anchor-link" href="09-big-entropy-and-the-generalized-linear-model.html#Code-9.9">¶</a>
+</h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [10]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">sim_p</span><span class="p">(</span><span class="n">G</span><span class="o">=</span><span class="mf">1.4</span><span class="p">):</span>
+    <span class="n">x123</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">x4</span> <span class="o">=</span> <span class="p">(</span><span class="n">G</span> <span class="o">*</span> <span class="n">x123</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">-</span> <span class="n">x123</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x123</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">-</span> <span class="n">G</span><span class="p">)</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">x123</span><span class="p">,</span> <span class="n">x4</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">x123</span><span class="p">,</span> <span class="n">x4</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)])</span> <span class="o">/</span> <span class="n">z</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"H"</span><span class="p">:</span> <span class="o">-</span><span class="p">(</span><span class="n">p</span> <span class="o">*</span> <span class="n">p</span><span class="o">.</span><span class="n">log</span><span class="p">())</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="s2">"p"</span><span class="p">:</span> <span class="n">p</span><span class="p">}</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Code-9.10">Code 9.10<a class="anchor-link" href="09-big-entropy-and-the-generalized-linear-model.html#Code-9.10">¶</a>
+</h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [11]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">H</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">sim_p</span><span class="p">(</span><span class="mf">1.4</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mf">1e5</span><span class="p">))])]</span>
+<span class="n">dens</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">adj</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">xlab</span><span class="o">=</span><span class="s2">"Entropy"</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,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">
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Code-9.11">Code 9.11<a class="anchor-link" href="09-big-entropy-and-the-generalized-linear-model.html#Code-9.11">¶</a>
+</h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [12]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">entropies</span> <span class="o">=</span> <span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">distributions</span> <span class="o">=</span> <span class="n">H</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Code-9.12">Code 9.12<a class="anchor-link" href="09-big-entropy-and-the-generalized-linear-model.html#Code-9.12">¶</a>
+</h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [13]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">entropies</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+    <div class="prompt output_prompt">Out[13]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor(1.2217)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h5 id="Code-9.13">Code 9.13<a class="anchor-link" href="09-big-entropy-and-the-generalized-linear-model.html#Code-9.13">¶</a>
+</h5>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [14]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">distributions</span><span class="p">[</span><span class="n">entropies</span><span class="o">.</span><span class="n">argmax</span><span class="p">()]</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+    <div class="prompt output_prompt">Out[14]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor([0.0902, 0.2095, 0.2100, 0.4902])</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><!-- NAVIGATION -->
+&lt; <a href="08-markov-chain-monte-carlo.html">Code 8.1</a> | <a href="index.html">Contents</a> | <a href="15-horoscopes.html">15_horoscopes.ipynb</a> &gt;</p>
+
+</div>
+</div>
+</div>
+    </div>
+  </div>
+
+    </div>
+    
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML" integrity="sha256-SDRP1VVYu+tgAGKhddBSl5+ezofHKZeI+OzxakbIe/Y=" crossorigin="anonymous"></script><script type="text/x-mathjax-config">
+        MathJax.Hub.Config({tex2jax: {inlineMath: [['$latex ','$'], ['\\(','\\)']]}});
+        </script></article><!--End of body content--><footer id="footer"><div class="text-center">
+  Contents © 2019         <a href="mailto:fehiepsi@gmail.com">Du Phan</a> - Powered by         <a href="https://getnikola.com" rel="nofollow">Nikola</a>         
+<a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+  <img alt="Creative Commons License BY-NC-SA" style="border-width:0; margin-bottom:12px;" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png"></a>
+
+</div>
+
+            
+        </footer>
+</div>
+</div>
+
+
+        <script src="assets/js/all-nocdn.js"></script><!-- fancy dates --><script>
+    moment.locale("en");
+    fancydates(0, "YYYY-MM-DD HH:mm");
+    </script><!-- end fancy dates --><script>
+    baguetteBox.run('div#content', {
+        ignoreClass: 'islink',
+        captions: function(element) {
+            return element.getElementsByTagName('img')[0].alt;
+    }});
+    </script><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=UA-131299125-1"></script><script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-131299125-1');
+</script>
+</body>
+</html>
