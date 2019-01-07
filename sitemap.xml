@@ -6,16 +6,8 @@
     xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
                         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
  <url>
-  <loc>https://fehiepsi.github.io/rethinking-pyro/.ipynb_checkpoints/01-the-golem-of-prague-checkpoint.html</loc>
-  <lastmod>2019-01-06T03:58:00Z</lastmod>
- </url>
- <url>
-  <loc>https://fehiepsi.github.io/rethinking-pyro/.ipynb_checkpoints/02-small-worlds-and-large-worlds-checkpoint.html</loc>
-  <lastmod>2019-01-06T03:58:00Z</lastmod>
- </url>
- <url>
-  <loc>https://fehiepsi.github.io/rethinking-pyro/.ipynb_checkpoints/03-sampling-the-imaginary-checkpoint.html</loc>
-  <lastmod>2019-01-06T05:31:00Z</lastmod>
+  <loc>https://fehiepsi.github.io/rethinking-pyro/</loc>
+  <lastmod>2019-01-07T03:50:00Z</lastmod>
  </url>
  <url>
   <loc>https://fehiepsi.github.io/rethinking-pyro/00-preface.html</loc>
