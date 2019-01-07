@@ -7,66 +7,70 @@
                         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
  <url>
   <loc>https://fehiepsi.github.io/rethinking-pyro/</loc>
-  <lastmod>2019-01-07T03:50:00Z</lastmod>
+  <lastmod>2019-01-07T23:26:00Z</lastmod>
  </url>
  <url>
   <loc>https://fehiepsi.github.io/rethinking-pyro/00-preface.html</loc>
-  <lastmod>2019-01-07T15:04:00Z</lastmod>
+  <lastmod>2019-01-07T23:24:00Z</lastmod>
  </url>
  <url>
   <loc>https://fehiepsi.github.io/rethinking-pyro/01-the-golem-of-prague.html</loc>
-  <lastmod>2019-01-07T15:04:00Z</lastmod>
+  <lastmod>2019-01-07T23:24:00Z</lastmod>
  </url>
  <url>
   <loc>https://fehiepsi.github.io/rethinking-pyro/02-small-worlds-and-large-worlds.html</loc>
-  <lastmod>2019-01-07T15:28:00Z</lastmod>
+  <lastmod>2019-01-07T23:24:00Z</lastmod>
  </url>
  <url>
   <loc>https://fehiepsi.github.io/rethinking-pyro/03-sampling-the-imaginary.html</loc>
-  <lastmod>2019-01-07T15:04:00Z</lastmod>
+  <lastmod>2019-01-07T23:24:00Z</lastmod>
  </url>
  <url>
   <loc>https://fehiepsi.github.io/rethinking-pyro/04-linear-models.html</loc>
-  <lastmod>2019-01-07T15:04:00Z</lastmod>
+  <lastmod>2019-01-07T23:24:00Z</lastmod>
  </url>
  <url>
   <loc>https://fehiepsi.github.io/rethinking-pyro/05-multivariate-linear-models.html</loc>
-  <lastmod>2019-01-07T15:04:00Z</lastmod>
+  <lastmod>2019-01-07T23:24:00Z</lastmod>
  </url>
  <url>
   <loc>https://fehiepsi.github.io/rethinking-pyro/06-overfitting-regularization-and-information-criteria.html</loc>
-  <lastmod>2019-01-07T15:04:00Z</lastmod>
+  <lastmod>2019-01-07T23:24:00Z</lastmod>
  </url>
  <url>
   <loc>https://fehiepsi.github.io/rethinking-pyro/07-interactions.html</loc>
-  <lastmod>2019-01-07T15:04:00Z</lastmod>
+  <lastmod>2019-01-07T23:24:00Z</lastmod>
  </url>
  <url>
   <loc>https://fehiepsi.github.io/rethinking-pyro/08-markov-chain-monte-carlo.html</loc>
-  <lastmod>2019-01-07T15:04:00Z</lastmod>
+  <lastmod>2019-01-07T23:24:00Z</lastmod>
  </url>
  <url>
   <loc>https://fehiepsi.github.io/rethinking-pyro/09-big-entropy-and-the-generalized-linear-model.html</loc>
-  <lastmod>2019-01-07T15:04:00Z</lastmod>
+  <lastmod>2019-01-07T23:24:00Z</lastmod>
  </url>
  <url>
   <loc>https://fehiepsi.github.io/rethinking-pyro/15-horoscopes.html</loc>
-  <lastmod>2019-01-07T15:04:00Z</lastmod>
+  <lastmod>2019-01-07T23:24:00Z</lastmod>
  </url>
  <url>
   <loc>https://fehiepsi.github.io/rethinking-pyro/archive.html</loc>
-  <lastmod>2019-01-07T15:04:00Z</lastmod>
+  <lastmod>2019-01-07T23:24:00Z</lastmod>
  </url>
  <url>
   <loc>https://fehiepsi.github.io/rethinking-pyro/categories/</loc>
-  <lastmod>2019-01-07T02:30:00Z</lastmod>
+  <lastmod>2019-01-07T23:04:00Z</lastmod>
  </url>
  <url>
-  <loc>https://fehiepsi.github.io/rethinking-pyro/listings/</loc>
-  <lastmod>2019-01-07T02:30:00Z</lastmod>
+  <loc>https://fehiepsi.github.io/rethinking-pyro/code/</loc>
+  <lastmod>2019-01-07T23:04:00Z</lastmod>
+ </url>
+ <url>
+  <loc>https://fehiepsi.github.io/rethinking-pyro/code/rethinking.py.html</loc>
+  <lastmod>2019-01-07T23:24:00Z</lastmod>
  </url>
  <url>
   <loc>https://fehiepsi.github.io/rethinking-pyro/posts/</loc>
-  <lastmod>2019-01-07T02:30:00Z</lastmod>
+  <lastmod>2019-01-07T23:04:00Z</lastmod>
  </url>
 </urlset>

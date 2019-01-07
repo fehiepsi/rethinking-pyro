@@ -1092,3 +1092,11 @@ a.navbar-brand {
   margin-right: unset;
 }
 
+a.blog-header-logo {
+  font-size: 2.5rem;
+}
+
+h1.entry-title {
+  font-size: 2.25rem;
+}
+
