@@ -16,35 +16,83 @@ class CopyNotebooks(Task):
     def set_site(self, site):
         self.site = site
         self.inject_dependency("render_posts", "copy_notebooks")
+        self.site.register_shortcode("contents", self.handler)
         super(CopyNotebooks, self).set_site(site)
 
-    def gen_tasks(self):
+    def _get_kw(self):
         kw = {
             "filters": self.site.config["FILTERS"],
+            "listing_folder": "listings",
             "notebooks_folder": self.site.config["NOTEBOOKS_FOLDER"],
+            "pages_folder": "pages",
         }
+        kw["notebooks"] = sorted(glob.glob(os.path.join(kw["notebooks_folder"], "*.ipynb")))
+        kw["scripts"] = sorted(glob.glob(os.path.join(kw["notebooks_folder"], "*.py")))
+        return kw
 
-        nb_files = sorted(glob.glob(os.path.join(kw["notebooks_folder"], "*.ipynb")))
-        for i, src_file in enumerate(nb_files):
-            dst_file = os.path.join("pages", os.path.basename(src_file).replace("_", "-"))
-            prev_nb, next_nb = None, None
-            if i > 0:
-                prev_nb = nb_files[i - 1]
-            if i < len(nb_files) - 1:
-                next_nb = nb_files[i + 1]
+    def gen_tasks(self):
+        kw = self._get_kw()
+
+        # copy scripts
+        if not os.path.isdir(kw["listing_folder"]):
+            os.mkdir(kw["listing_folder"])
+
+        for i, src_file in enumerate(kw["scripts"]):
+            dst_file = os.path.join(kw["listing_folder"], os.path.basename(src_file))
             task = {
                 "basename": self.name,
                 "name": dst_file,
                 "file_dep": [src_file],
                 "targets": [dst_file],
-                "actions": [(copynb, (src_file, dst_file, prev_nb, next_nb))],
+                "actions": [(copy_scripts, (src_file, dst_file))],
                 "uptodate": [utils.config_changed(kw, "copy_notebooks")],
                 "clean": True,
             }
             yield utils.apply_filters(task, kw["filters"])
 
+        # copy notebooks
+        if not os.path.isdir(kw["pages_folder"]):
+            os.mkdir(kw["pages_folder"])
 
-def copynb(src_file, dst_file, prev_nb, next_nb):
+        for i, src_file in enumerate(kw["notebooks"]):
+            dst_file = os.path.join(kw["pages_folder"], os.path.basename(src_file).replace("_", "-"))
+            prev_nb, next_nb = None, None
+            if i > 0:
+                prev_nb = kw["notebooks"][i - 1]
+            if i < len(kw["notebooks"]) - 1:
+                next_nb = kw["notebooks"][i + 1]
+            task = {
+                "basename": self.name,
+                "name": dst_file,
+                "file_dep": [src_file],
+                "targets": [dst_file],
+                "actions": [(copy_notebooks, (src_file, dst_file, prev_nb, next_nb))],
+                "uptodate": [utils.config_changed(kw, "copy_notebooks")],
+                "clean": True,
+            }
+            yield utils.apply_filters(task, kw["filters"])
+
+    def handler(self, site=None, data=None, lang=None, post=None):
+        kw = self._get_kw()
+
+        output = []
+        for nb_file in kw["notebooks"]:
+            nb_link = get_nb_link(nb_file)
+            nb_title = get_nb_title(nb_file)
+            output.append('<li><p><a href="{}">{}</a></p></li>'.format(nb_link, nb_title))
+
+        return "<ul>{}</ul>".format("".join(output)), kw["notebooks"]
+
+
+def copy_scripts(src_file, dst_file):
+    with open(src_file, "r") as f:
+        content = f.read()
+
+    with open(dst_file, "w") as f:
+        f.write(content)
+
+
+def copy_notebooks(src_file, dst_file, prev_nb, next_nb):
     # navigation
     prev_link = get_nb_link(prev_nb) if prev_nb is not None else ""
     next_link = get_nb_link(next_nb) if next_nb is not None else ""
@@ -65,7 +113,7 @@ def copynb(src_file, dst_file, prev_nb, next_nb):
     nb.metadata.nikola = {"title": title}
 
     # add navigation
-    nav_template = "<!-- NAVIGATION -->\n< [{}]({}) | [Contents](index.html) | [{}]({}) >"
+    nav_template = "<!-- NAVIGATION -->\n< [{}]({}) | [{}]({}) >"
     navigation = nav_template.format(prev_title, prev_link, next_title, next_link)
     nb.cells.insert(0, nbformat.v4.new_markdown_cell(navigation, metadata={"navigation": True}))
     nb.cells.append(nbformat.v4.new_markdown_cell(navigation, metadata={"navigation": True}))
@@ -75,16 +123,16 @@ def copynb(src_file, dst_file, prev_nb, next_nb):
         nbformat.write(nb, f)
 
 
-def get_nb_link(nbfile):
-    return os.path.basename(nbfile).replace("_", "-").replace(".ipynb", ".html")
+def get_nb_link(nb_file):
+    return os.path.basename(nb_file).replace("_", "-").replace(".ipynb", ".html")
 
 
-def get_nb_title(nbfile):
-    with io.open(nbfile, "r", encoding="utf8") as f:
+def get_nb_title(nb_file):
+    with io.open(nb_file, "r", encoding="utf8") as f:
         nb = nbformat.read(f, as_version=4)
 
     for cell in nb.cells:
         if cell.cell_type == "markdown" and cell.source.startswith("#"):
             return cell.source.lstrip("#").splitlines()[0].strip()
 
-    return os.path.basename(nbfile)
+    return get_nb_link(nb_file)

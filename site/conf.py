@@ -277,7 +277,7 @@ TIMEZONE = "America/New_York"
 # One or more folders containing code listings to be processed and published on
 # the site. The format is a dictionary of {source: relative destination}.
 # Default is:
-# LISTINGS_FOLDERS = {'listings': 'listings'}
+LISTINGS_FOLDERS = {'listings': 'code'}
 # Which means process listings from 'listings' into 'output/listings'
 
 # A mapping of languages to file-extensions that represent that language.
@@ -1066,7 +1066,7 @@ PRETTY_URLS = False
 # """
 
 # Do you want to customize the nbconversion of your IPython notebook?
-IPYNB_CONFIG = {"Exporter": {"template_file": "full.tpl"}}
+IPYNB_CONFIG = {"Exporter": {"template_file": "files/templates/custom.tpl"}}
 #IPYNB_CONFIG = {"Exporter": {"template_file": "files/templates/custom.tpl"}}
 # With the following example configuration you can use a custom jinja template
 # called `toggle.tpl` which has to be located in your site/blog main folder:
