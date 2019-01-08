@@ -1,4 +1,8 @@
 *~
-.ipynb_checkpoints/
-__pycache__/
-Ch*
+.ipynb_checkpoints
+__pycache__
+cache
+.doit.db*
+output
+site/pages/*.ipynb
+

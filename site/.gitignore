@@ -1,8 +1,0 @@
-*~
-.ipynb_checkpoints
-cache
-.doit.db*
-__pycache__
-output
-pages/*.ipynb
-
