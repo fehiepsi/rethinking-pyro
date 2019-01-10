@@ -1,5 +1,4 @@
 jupyter
-matplotlib
 pandas
 pyro-ppl
 seaborn
