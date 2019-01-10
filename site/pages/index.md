@@ -7,10 +7,14 @@
 
 {{% contents %}}
 
+## Supplements
+
 + [rethinking.py](code/rethinking.py.html)
+
++ [data](data/)
 
 ## Installation
 
 ```sh
-pip install jupyter matplotlib pandas pyro-ppl seaborn torch
+pip install jupyter pandas pyro-ppl seaborn torch
 ```
