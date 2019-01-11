@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Code 3.1 | Statistical Rethinking with PyTorch and Pyro</title>
+<title>Sampling the Imaginary | Statistical Rethinking with PyTorch and Pyro</title>
 <link href="assets/css/all-nocdn.css" rel="stylesheet" type="text/css">
 <link href="assets/css/ipython.min.css" rel="stylesheet" type="text/css">
 <link href="assets/css/nikola_ipython.css" rel="stylesheet" type="text/css">
@@ -14,7 +14,7 @@
 <link rel="canonical" href="https://fehiepsi.github.io/rethinking-pyro/03-sampling-the-imaginary.html">
 <!--[if lt IE 9]><script src="assets/js/html5.js"></script><![endif]--><meta name="author" content="fehiepsi">
 <meta property="og:site_name" content="Statistical Rethinking with PyTorch and Pyro">
-<meta property="og:title" content="Code 3.1">
+<meta property="og:title" content="Sampling the Imaginary">
 <meta property="og:url" content="https://fehiepsi.github.io/rethinking-pyro/03-sampling-the-imaginary.html">
 <meta property="og:description" content="&lt; Chapter 2. Small Worlds and Large Worlds | Chapter 4. Linear Models &gt;
 
@@ -22,6 +22,13 @@
     
     
     
+
+
+
+
+
+
+
 
 
 In [1]:
@@ -32,9 +39,9 @@ import seaborn as sns
 import torch
 
 import pyro
-import pyro.distributio">
+import pyro.dist">
 <meta property="og:type" content="article">
-<meta property="article:published_time" content="2019-01-07T19:58:04-05:00">
+<meta property="article:published_time" content="2019-01-11T17:02:13-05:00">
 </head>
 <body>
 <a href="#content" class="sr-only sr-only-focusable">Skip to main content</a>
@@ -72,7 +79,7 @@ import pyro.distributio">
         <!--Body content-->
         
         
-<article class="post-text storypage" itemscope="itemscope" itemtype="http://schema.org/Article"><header><h1 class="p-name entry-title" itemprop="headline name"><a href="#" class="u-url">Code 3.1</a></h1>
+<article class="post-text storypage" itemscope="itemscope" itemtype="http://schema.org/Article"><header><h1 class="p-name entry-title" itemprop="headline name"><a href="#" class="u-url">Sampling the Imaginary</a></h1>
 
         
 
@@ -89,6 +96,15 @@ import pyro.distributio">
     </div>
     </div>
     </div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+
+</div>
+</div>
+</div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">In [1]:</div>
@@ -129,7 +145,8 @@ import pyro.distributio">
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-
+<h4 id="Code-3.1">Code 3.1<a class="anchor-link" href="03-sampling-the-imaginary.html#Code-3.1">¶</a>
+</h4>
 </div>
 </div>
 </div>
