@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import pandas as pd
 import torch
 from torch.distributions import transform_to, constraints
@@ -8,20 +7,30 @@ import pyro.distributions as dist
 import pyro.ops.stats as stats
 import pyro.poutine as poutine
 from pyro.contrib.autoguide import AutoLaplaceApproximation
-from pyro.infer import TracePosterior, Trace_ELBO
+from pyro.infer import TracePosterior, TracePredictive, Trace_ELBO
+from pyro.ops.welford import WelfordCovariance
 
 
 class MAP(TracePosterior):
-    def __init__(self, model, num_samples=1000, start={}):
+    def __init__(self, model, num_samples=10000, start={}):
         super(MAP, self).__init__()
         self.model = model
         self.num_samples = num_samples
         self.start = start
 
     def _traces(self, *args, **kwargs):
+        # find good initial trace
+        model_trace = poutine.trace(self.model).get_trace(*args, **kwargs)
+        best_log_prob = model_trace.log_prob_sum()
+        for i in range(20):
+            trace = poutine.trace(self.model).get_trace(*args, **kwargs)
+            log_prob = trace.log_prob_sum()
+            if log_prob > best_log_prob:
+                best_log_prob = log_prob
+                model_trace = trace
+
         # lift model
         prior, unpacked = {}, {}
-        model_trace = poutine.trace(self.model).get_trace(*args, **kwargs)
         param_constraints = pyro.get_param_store().get_state()["constraints"]
         for name, node in model_trace.nodes.items():
             if node["type"] == "param":
@@ -58,28 +67,35 @@ class MAP(TracePosterior):
             model_poutine = poutine.trace(poutine.replay(lifted_model, trace=guide_trace))
             yield model_poutine.get_trace(*args, **kwargs), 1.0
 
+        pyro.clear_param_store()
+
 
 class LM(MAP):
-    def __init__(self, formula, data, num_samples=1000, start={}):
+    def __init__(self, formula, data, num_samples=10000, start={}):
         y_name, predictor_names = formula.split(" ~ ")
         predictor_names = predictor_names.split(" + ")
         self.y = {"name": y_name, "value": torch.tensor(data[y_name].values, dtype=torch.float)}
         self.y["mean"] = self.y["value"].mean()
-        predictors = {name: torch.tensor(data[name].values, dtype=torch.float) for name in predictor_names}
-        self.predictor_means = {name: predictor.mean() for name, predictor in predictors.items()}
-        self.centered_predictors = {name: (predictor - self.predictor_means[name])
-                                    for name, predictor in predictors.items()}
-        super(LM, self).__init__(self.model, num_samples, start)
+        self.predictors = {name: torch.tensor(data[name].values, dtype=torch.float) for name in predictor_names}
+        self._predictor_means = {name: predictor.mean() for name, predictor in self.predictors.items()}
+        super(LM, self).__init__(self._model, num_samples, start)
 
-    def model(self):
+    def _model(self):
         intercept = pyro.sample("intercept", dist.Normal(self.y["mean"], 10))
         mu = intercept
-        for name, predictor in self.centered_predictors.items():
+        for name, predictor in self.predictors.items():
             coef = pyro.sample(name, dist.Normal(0, 10))
-            mu = mu + coef * predictor
+            # use "centering trick"
+            mu = mu + coef * (predictor - self._predictor_means[name])
         sigma = pyro.sample("sigma", dist.HalfCauchy(2))
         with pyro.plate("plate"):
             return pyro.sample(self.y["name"], dist.Normal(mu, sigma), obs=self.y["value"])
+
+    def _get_centering_constant(self, coefs):
+        center = 0
+        for name, predictor_mean in self._predictor_means.items():
+            center = center + coefs[name] * predictor_mean
+        return center
 
 
 def glimmer(formula, family="normal"):
@@ -102,41 +118,88 @@ def coef(posterior):
     node_supports = posterior.marginal(posterior.exec_traces[0].stochastic_nodes).support()
     for node, support in node_supports.items():
         mean[node] = support.mean().detach()
+    # correct `intercept` due to "centering trick"
     if isinstance(posterior, LM):
-        for name, predictor_mean in posterior.predictor_means.items():
-            mean["intercept"] = mean["intercept"] - mean[name] * predictor_mean
+        center = posterior._get_centering_constant(mean)
+        mean["intercept"] = mean["intercept"] - center
     return mean
 
 
-def precis(posterior, corr=False, digits=2):
-    mean, std_dev, lower_hpd, upper_hpd = {}, {}, {}, {}
+def vcov(posterior):
     node_supports = posterior.marginal(posterior.exec_traces[0].stochastic_nodes).support()
+    packed_support = torch.cat([support.reshape(support.size(0), -1)
+                                for support in node_supports.values()], dim=1)
+    cov_scheme = WelfordCovariance(diagonal=False)
+    for sample in packed_support:
+        cov_scheme.update(sample)
+    return cov_scheme.get_covariance().detach()
+
+
+def precis(posterior, corr=False, digits=2):
+    if isinstance(posterior, TracePosterior):
+        node_supports = posterior.marginal(posterior.exec_traces[0].stochastic_nodes).support()
+    else:
+        node_supports = posterior
+    mean, std_dev, lower_hpd, upper_hpd = {}, {}, {}, {}
     for node, support in node_supports.items():
         mean[node] = support.mean().item()
         std_dev[node] = support.std().item()
         hpdi = stats.hpdi(support, prob=0.89)
         lower_hpd[node] = hpdi[0].item()
         upper_hpd[node] = hpdi[1].item()
+    # correct `intercept` due to "centering trick"
+    if isinstance(posterior, LM):
+        center = posterior._get_centering_constant(mean)
+        mean["intercept"] = mean["intercept"] - center
+        lower_hpd["intercept"] = lower_hpd["intercept"] - center
+        upper_hpd["intercept"] = upper_hpd["intercept"] - center
     precis = pd.DataFrame.from_dict({"Mean": mean, "StdDev": std_dev, "|0.89": lower_hpd, "0.89|": upper_hpd})
+
+    if corr:
+        cov = vcov(posterior)
+        corr = cov / cov.diag().ger(cov.diag()).sqrt()
+        corr_dict = {}
+        pos = 0
+        for node in posterior.exec_traces[0].stochastic_nodes:
+            corr_dict[node] = corr[:, pos].tolist()
+            pos = pos + 1
+        precis = precis.assign(**corr_dict)
     return precis.round(digits)
 
 
-def dens(samples, adj=0.5, plot=True, c=None, lw=None, xlab=None):
-    bw_factor = (0.75 * samples.size(0)) ** (-0.2)
-    bw = adj * bw_factor * samples.std()
-    x_min = samples.min()
-    x_max = samples.max()
-    x = torch.linspace(x_min, x_max, 1000)
-    y = dist.Normal(samples, bw).log_prob(x.unsqueeze(-1)).logsumexp(-1).exp()
-    y = y / y.sum() * (x.size(0) / (x_max - x_min))
-    if not plot:
-        return x, y
-    plt.plot(x.tolist(), y.tolist(), c=c, lw=lw)
-    plt.xlabel(xlab)
-    plt.ylabel("Density")
+def link(posterior, data=None, n=1000):
+    obs_node = posterior.exec_traces[0].observation_nodes[-1]
+    mu = []
+    if data is None:
+        for i in range(n):
+            idx = posterior._categorical.sample().item()
+            trace = posterior.exec_traces[idx]
+            mu.append(trace.nodes[obs_node]["fn"].mean)
+    else:
+        data[obs_node] = None
+        predictive = TracePredictive(poutine.lift(posterior.model, lambda: None), posterior, n).run(**data)
+        for trace in predictive.exec_traces:
+            mu.append(trace.nodes[obs_node]["fn"].mean)
+    return torch.stack(mu).detach()
 
 
-def compare(*models):
+def sim(posterior, data=None, n=1000):
+    obs_node = posterior.exec_traces[0].observation_nodes[-1]
+    obs = []
+    if data is None:
+        for i in range(n):
+            idx = posterior._categorical.sample().item()
+            trace = posterior.exec_traces[idx]
+            obs.append(trace.nodes[obs_node]["fn"].sample())
+    else:
+        data[obs_node] = None
+        predictive = TracePredictive(poutine.lift(posterior.model, lambda: None), posterior, n).run(**data)
+        for trace in predictive.exec_traces:
+            obs.append(trace.nodes[obs_node]["value"])
+    return torch.stack(obs).detach()
+
+
+def compare(*posteriors):
     WAIC_dict, WAIC_vec = {}, {}
     for m in models:
         WAIC = m.WAIC(pointwise=True)
@@ -205,3 +268,18 @@ def ensemble(data, *models):
     weighted_link = torch.cat([l[index[i]:index[i + 1]] for i, l in enumerate(links)])
     weighted_sim = torch.cat([s[index[i]:index[i + 1]] for i, s in enumerate(sims)])
     return {"link": weighted_link, "sim": weighted_sim}
+
+
+def chainmode(samples, adj=0.5):
+    bw_factor = (0.75 * samples.size(0)) ** (-0.2)
+    bw = adj * bw_factor * samples.std()
+    x_min = samples.min()
+    x_max = samples.max()
+    x = torch.linspace(x_min, x_max, 1000)
+    y = dist.Normal(samples, bw).log_prob(x.unsqueeze(-1)).logsumexp(-1).exp()
+    y = y / y.sum() * (x.size(0) / (x_max - x_min))
+    if not plot:
+        return x, y
+    plt.plot(x.tolist(), y.tolist(), c=c, lw=lw)
+    plt.xlabel(xlab)
+    plt.ylabel("Density")

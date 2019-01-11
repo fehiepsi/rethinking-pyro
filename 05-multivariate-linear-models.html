@@ -16,7 +16,7 @@
 <meta property="og:site_name" content="Statistical Rethinking with PyTorch and Pyro">
 <meta property="og:title" content="Code 5.1">
 <meta property="og:url" content="https://fehiepsi.github.io/rethinking-pyro/05-multivariate-linear-models.html">
-<meta property="og:description" content="&lt; Code 4.1 | Code 6.1 &gt;
+<meta property="og:description" content="&lt; Chapter 4. Linear Models | Code 6.1 &gt;
 
     
     
@@ -27,13 +27,11 @@
 In [1]:
 
     
-%matplotlib inline
-import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 import torch
 from torch.distributions import constraints
-
-import pyr">
+import warnings; warning">
 <meta property="og:type" content="article">
 <meta property="article:published_time" content="2019-01-07T19:58:05-05:00">
 </head>
@@ -84,7 +82,7 @@ import pyr">
     <div class="text_cell_render border-box-sizing rendered_html">
     <div class="navigation">
     <p><!-- NAVIGATION -->
-&lt; <a href="04-linear-models.html">Code 4.1</a> | <a href="06-overfitting-regularization-and-information-criteria.html">Code 6.1</a> &gt;</p>
+&lt; <a href="04-linear-models.html">Chapter 4. Linear Models</a> | <a href="06-overfitting-regularization-and-information-criteria.html">Code 6.1</a> &gt;</p>
 
     </div>
     </div>
@@ -95,19 +93,30 @@ import pyr">
 <div class="prompt input_prompt">In [1]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%</span><span class="k">matplotlib</span> inline
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="k">import</span> <span class="n">constraints</span>
+<span class="kn">import</span> <span class="nn">warnings</span><span class="p">;</span> <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="ne">FutureWarning</span><span class="p">)</span>
 
 <span class="kn">import</span> <span class="nn">pyro</span>
 <span class="kn">import</span> <span class="nn">pyro.distributions</span> <span class="k">as</span> <span class="nn">dist</span>
 
 <span class="kn">from</span> <span class="nn">rethinking</span> <span class="k">import</span> <span class="n">HPDI</span><span class="p">,</span> <span class="n">PI</span><span class="p">,</span> <span class="n">LM</span><span class="p">,</span> <span class="n">MAP</span><span class="p">,</span> <span class="n">dens</span><span class="p">,</span> <span class="n">glimmer</span><span class="p">,</span> <span class="n">precis</span><span class="p">,</span> <span class="n">quantile</span>
+</pre></div>
 
-<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s2">"axes.labelsize"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"large"</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s2">"lines.linewidth"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [1]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sns</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">font_scale</span><span class="o">=</span><span class="mf">1.25</span><span class="p">,</span> <span class="n">rc</span><span class="o">=</span><span class="p">{</span><span class="s2">"figure.figsize"</span><span class="p">:</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">)})</span>
+
 <span class="n">pyro</span><span class="o">.</span><span class="n">enable_validation</span><span class="p">()</span>
 <span class="n">pyro</span><span class="o">.</span><span class="n">set_rng_seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 </pre></div>
@@ -3654,7 +3663,7 @@ memory usage: 17.1 KB
     <div class="text_cell_render border-box-sizing rendered_html">
     <div class="navigation">
     <p><!-- NAVIGATION -->
-&lt; <a href="04-linear-models.html">Code 4.1</a> | <a href="06-overfitting-regularization-and-information-criteria.html">Code 6.1</a> &gt;</p>
+&lt; <a href="04-linear-models.html">Chapter 4. Linear Models</a> | <a href="06-overfitting-regularization-and-information-criteria.html">Code 6.1</a> &gt;</p>
 
     </div>
     </div>
