@@ -2,8 +2,8 @@
 .ipynb_checkpoints
 __pycache__
 cache
-.doit.db*
 output
+.doit.db*
 site/pages/*.ipynb
-site/listings/rethinking.py
+site/listings/*.py
 
