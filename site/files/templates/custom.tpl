@@ -14,6 +14,18 @@
 {%- endif -%}
 {% endblock output_group %}
 
+{% block output_area_prompt %}
+<div class="prompt output_prompt">
+<span>
+{%- if cell.execution_count is defined -%}
+    Out[{{ cell.execution_count|replace(None, "&nbsp;") }}]:
+{%- else -%}
+    Out[&nbsp;]:
+{%- endif -%}
+</span>
+</div>
+{% endblock output_area_prompt %}
+
 {% block markdowncell %}
 {%- if cell.metadata.navigation -%}
     <div class="cell border-box-sizing text_cell rendered">
