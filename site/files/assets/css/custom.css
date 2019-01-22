@@ -6,6 +6,10 @@ div.highlight pre {
   background: #f0f0f0;
 }
 
+div.text_cell_render h4 {
+  font-family: "Times New Roman", serif;
+}
+
 div.prompt {
   background-color: #FFFFFF !important;
 }
