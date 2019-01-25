@@ -118,6 +118,11 @@ def copy_notebooks(src_file, dst_file, prev_nb, next_nb):
     nb.cells.insert(0, nbformat.v4.new_markdown_cell(navigation, metadata={"navigation": True}))
     nb.cells.append(nbformat.v4.new_markdown_cell(navigation, metadata={"navigation": True}))
 
+    # reduce execution_count
+    for cell in nb.cells:
+        if "execution_count" in cell and cell.execution_count is not None:
+            cell.execution_count -= 1
+
     # write notebook
     with io.open(dst_file, "w", encoding="utf8") as f:
         nbformat.write(nb, f)

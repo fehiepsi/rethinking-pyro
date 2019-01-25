@@ -17,9 +17,14 @@ from pyro.contrib.autoguide import AutoLaplaceApproximation
 from pyro.infer import TracePosterior, TracePredictive, Trace_ELBO
 from pyro.ops.welford import WelfordCovariance
 
-mp.set_sharing_strategy("file_system")
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 warnings.simplefilter("ignore", FutureWarning)
+
+mp.set_sharing_strategy("file_system")
+sns.set(font_scale=1.25, rc={"figure.figsize": (8, 6)})
+
+pyro.enable_validation()
+pyro.set_rng_seed(0)
 
 
 class MAP(TracePosterior):
@@ -35,7 +40,7 @@ class MAP(TracePosterior):
         # find good initial trace
         model_trace = poutine.trace(self.model).get_trace(*args, **kwargs)
         best_log_prob = model_trace.log_prob_sum()
-        for i in range(50):
+        for i in range(10):
             trace = poutine.trace(self.model).get_trace(*args, **kwargs)
             log_prob = trace.log_prob_sum()
             if log_prob > best_log_prob:
@@ -87,7 +92,7 @@ class MAP(TracePosterior):
     def run(self, *args, **kwargs):
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            for i in range(5):
+            for i in range(10):
                 try:
                     return super(MAP, self).run(*args, **kwargs)
                 except Exception as e:
