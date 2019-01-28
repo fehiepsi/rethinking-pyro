@@ -15,6 +15,7 @@ import pyro.ops.stats as stats
 import pyro.poutine as poutine
 from pyro.contrib.autoguide import AutoLaplaceApproximation
 from pyro.infer import TracePosterior, TracePredictive, Trace_ELBO
+from pyro.infer.mcmc import MCMC
 from pyro.ops.welford import WelfordCovariance
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -191,7 +192,7 @@ def glimmer(formula, data):
 
 def extract_samples(posterior):
     nodes = poutine.util.prune_subsample_sites(posterior.exec_traces[0]).stochastic_nodes
-    node_supports = posterior.marginal(nodes).support()
+    node_supports = posterior.marginal(nodes).support(flatten=True)
     return {latent: samples.detach() for latent, samples in node_supports.items()}
 
 
@@ -246,6 +247,11 @@ def precis(posterior, corr=False, digits=2):
         corr = cov / cov.diag().ger(cov.diag()).sqrt()
         for i, node in enumerate(df.index):
             df[node] = corr[:, i]
+
+    if isinstance(posterior, MCMC):
+        diagnostics = posterior.marginal(df.index.tolist()).diagnostics()
+        df = pd.concat([df, pd.DataFrame(diagnostics).T.astype(float)], axis=1)
+
     return df.round(digits)
 
 
