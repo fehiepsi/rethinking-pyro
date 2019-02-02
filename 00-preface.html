@@ -24,14 +24,7 @@
     
 
 
-
-
-
-
-
-
-
-In [1]:
+In [0]:
 
     
 import pandas as pd
@@ -41,9 +34,9 @@ import torch
 import pyro
 import pyro.distributions as dist
 
-from rethinking">
+from rethinking import">
 <meta property="og:type" content="article">
-<meta property="article:published_time" content="2019-01-09T23:48:49-05:00">
+<meta property="article:published_time" content="2019-02-01T23:36:19-05:00">
 </head>
 <body>
 <a href="#content" class="sr-only sr-only-focusable">Skip to main content</a>
@@ -98,18 +91,9 @@ from rethinking">
     </div>
     </div>
     </div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-
-</div>
-</div>
-</div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [1]:</div>
+<div class="prompt input_prompt">In [0]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -122,23 +106,7 @@ from rethinking">
 <span class="kn">from</span> <span class="nn">rethinking</span> <span class="k">import</span> <span class="n">LM</span><span class="p">,</span> <span class="n">coef</span>
 </pre></div>
 
-    </div>
 </div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In [2]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sns</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">font_scale</span><span class="o">=</span><span class="mf">1.25</span><span class="p">,</span> <span class="n">rc</span><span class="o">=</span><span class="p">{</span><span class="s2">"figure.figsize"</span><span class="p">:</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">)})</span>
-
-<span class="n">pyro</span><span class="o">.</span><span class="n">enable_validation</span><span class="p">()</span>
-<span class="n">pyro</span><span class="o">.</span><span class="n">set_rng_seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-</pre></div>
-
-    </div>
 </div>
 </div>
 
@@ -148,20 +116,20 @@ from rethinking">
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h5 id="Code-0.1">Code 0.1<a class="anchor-link" href="00-preface.html#Code-0.1">¶</a>
-</h5>
+<h4 id="Code-0.1">Code 0.1<a class="anchor-link" href="00-preface.html#Code-0.1">¶</a>
+</h4>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [3]:</div>
+<div class="prompt input_prompt">In [1]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">"All models are wrong, but some are useful."</span><span class="p">)</span>
 </pre></div>
 
-    </div>
+</div>
 </div>
 </div>
 
@@ -171,7 +139,10 @@ from rethinking">
 
 <div class="output_area">
 
-    <div class="prompt"></div>
+
+<div class="prompt output_prompt">
+<span>Out[1]:</span>
+</div>
 
 
 <div class="output_subarea output_stream output_stdout output_text">
@@ -189,14 +160,14 @@ from rethinking">
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h5 id="Code-0.2">Code 0.2<a class="anchor-link" href="00-preface.html#Code-0.2">¶</a>
-</h5>
+<h4 id="Code-0.2">Code 0.2<a class="anchor-link" href="00-preface.html#Code-0.2">¶</a>
+</h4>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [4]:</div>
+<div class="prompt input_prompt">In [2]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
@@ -207,7 +178,7 @@ from rethinking">
 <span class="n">x</span>
 </pre></div>
 
-    </div>
+</div>
 </div>
 </div>
 
@@ -217,7 +188,10 @@ from rethinking">
 
 <div class="output_area">
 
-    <div class="prompt output_prompt">Out[4]:</div>
+
+<div class="prompt output_prompt">
+<span>Out[2]:</span>
+</div>
 
 
 
@@ -237,21 +211,21 @@ from rethinking">
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h5 id="Code-0.3">Code 0.3<a class="anchor-link" href="00-preface.html#Code-0.3">¶</a>
-</h5>
+<h4 id="Code-0.3">Code 0.3<a class="anchor-link" href="00-preface.html#Code-0.3">¶</a>
+</h4>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [5]:</div>
+<div class="prompt input_prompt">In [3]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span><span class="o">.</span><span class="n">log</span><span class="p">())</span>
 <span class="nb">print</span><span class="p">(</span><span class="mi">200</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span><span class="o">.</span><span class="n">log</span><span class="p">())</span>
 </pre></div>
 
-    </div>
+</div>
 </div>
 </div>
 
@@ -261,7 +235,10 @@ from rethinking">
 
 <div class="output_area">
 
-    <div class="prompt"></div>
+
+<div class="prompt output_prompt">
+<span>Out[3]:</span>
+</div>
 
 
 <div class="output_subarea output_stream output_stdout output_text">
@@ -280,20 +257,20 @@ tensor(-921.0341)
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h5 id="Code-0.4">Code 0.4<a class="anchor-link" href="00-preface.html#Code-0.4">¶</a>
-</h5>
+<h4 id="Code-0.4">Code 0.4<a class="anchor-link" href="00-preface.html#Code-0.4">¶</a>
+</h4>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [6]:</div>
+<div class="prompt input_prompt">In [4]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Load the data:</span>
 <span class="c1"># car braking distances in feet paired with speeds in km/h</span>
 <span class="c1"># see cars.info() for details</span>
-<span class="n">cars</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"../data/cars.csv"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">cars</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"../data/cars.csv"</span><span class="p">)</span>
 
 <span class="c1"># fit a linear regression of distance on speed</span>
 <span class="n">m</span> <span class="o">=</span> <span class="n">LM</span><span class="p">(</span><span class="s2">"dist ~ speed"</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cars</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
@@ -302,12 +279,13 @@ tensor(-921.0341)
 <span class="nb">print</span><span class="p">(</span><span class="n">coef</span><span class="p">(</span><span class="n">m</span><span class="p">))</span>
 
 <span class="c1"># plot residuals against speed</span>
-<span class="n">resid</span> <span class="o">=</span> <span class="n">cars</span><span class="p">[</span><span class="s2">"dist"</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">coef</span><span class="p">(</span><span class="n">m</span><span class="p">)[</span><span class="s2">"intercept"</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">+</span> <span class="n">coef</span><span class="p">(</span><span class="n">m</span><span class="p">)[</span><span class="s2">"speed"</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">*</span> <span class="n">cars</span><span class="p">[</span><span class="s2">"speed"</span><span class="p">])</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">coef</span><span class="p">(</span><span class="n">m</span><span class="p">)[</span><span class="s2">"Intercept"</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">+</span> <span class="n">coef</span><span class="p">(</span><span class="n">m</span><span class="p">)[</span><span class="s2">"speed"</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">*</span> <span class="n">cars</span><span class="p">[</span><span class="s2">"speed"</span><span class="p">]</span>
+<span class="n">resid</span> <span class="o">=</span> <span class="n">cars</span><span class="p">[</span><span class="s2">"dist"</span><span class="p">]</span> <span class="o">-</span> <span class="n">y</span>
 <span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span><span class="n">cars</span><span class="p">[</span><span class="s2">"speed"</span><span class="p">],</span> <span class="n">resid</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xlabel</span><span class="o">=</span><span class="s2">"speed"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s2">"residual"</span><span class="p">);</span>
 </pre></div>
 
-    </div>
+</div>
 </div>
 </div>
 
@@ -317,18 +295,24 @@ tensor(-921.0341)
 
 <div class="output_area">
 
-    <div class="prompt"></div>
+
+<div class="prompt output_prompt">
+<span>Out[4]:</span>
+</div>
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>{'intercept': tensor(-17.4006), 'speed': tensor(3.9222), 'sigma': tensor(15.0093)}
+<pre>{'Intercept': tensor(-17.4259), 'speed': tensor(3.9238), 'sigma': tensor(15.0173)}
 </pre>
 </div>
 </div>
 
 <div class="output_area">
 
-    <div class="prompt"></div>
+
+<div class="prompt output_prompt">
+<span>Out[4]:</span>
+</div>
 
 
 
@@ -348,8 +332,8 @@ tensor(-921.0341)
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h5 id="Code-0.5">Code 0.5<a class="anchor-link" href="00-preface.html#Code-0.5">¶</a>
-</h5>
+<h4 id="Code-0.5">Code 0.5<a class="anchor-link" href="00-preface.html#Code-0.5">¶</a>
+</h4>
 </div>
 </div>
 </div>

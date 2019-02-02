@@ -16,10 +16,9 @@
 <meta property="og:site_name" content="Statistical Rethinking with PyTorch and Pyro">
 <meta property="og:title" content="Overview">
 <meta property="og:url" content="https://fehiepsi.github.io/rethinking-pyro/">
-<meta property="og:description" content="Contents
-PrefaceChapter 1. The Golem of PragueChapter 2. Small Worlds and Large WorldsChapter 3. Sampling the ImaginaryChapter 4. Linear ModelsChapter 5. Multivariate Linear ModelsCode 6.1Code 7.1Code">
+<meta property="og:description" content="Statistical Rethinking is an excellent book for applied Bayesian data analysis. The accompanying codes for the book are written in R and Stan. They are then ported to Python language using PyMC3. Rece">
 <meta property="og:type" content="article">
-<meta property="article:published_time" content="2019-01-09T23:42:17-05:00">
+<meta property="article:published_time" content="2019-02-01T23:36:03-05:00">
 </head>
 <body>
 <a href="#content" class="sr-only sr-only-focusable">Skip to main content</a>
@@ -63,6 +62,8 @@ PrefaceChapter 1. The Golem of PragueChapter 2. Small Worlds and Large WorldsCha
 
     </header><div class="e-content entry-content" itemprop="articleBody text">
     <div>
+<p><a href="https://xcelab.net/rm/statistical-rethinking/"><em>Statistical Rethinking</em></a> is an excellent book for applied <a href="https://en.wikipedia.org/wiki/Bayesian_statistics">Bayesian data analysis</a>. The <a href="https://github.com/rmcelreath/rethinking">accompanying codes for the book</a> are written in <strong>R</strong> and <strong>Stan</strong>. They are then <a href="https://github.com/pymc-devs/resources/tree/master/Rethinking">ported to Python language</a> using <a href="https://docs.pymc.io/">PyMC3</a>. Recently, <a href="http://pyro.ai/">Pyro</a> emerges as a scalable and flexible Bayesian modeling tool (see its <a href="http://pyro.ai/examples/">tutorial page</a>), so to attract statisticians to this new library, I decided to make a <em>Pyronic</em> version for the codes in this repository. Inspired by the <em>PyMC3onic</em> version, I keep the codes in this repository as close as possible to the original codes in the book.</p>
+<p>To say a bit more about <strong>Pyro</strong>, it is a universal <a href="https://en.wikipedia.org/wiki/Probabilistic_programming_language">probabilistic programming language</a> which is built on top of <a href="https://pytorch.org/">PyTorch</a>, a very popular platform for deep learning. If you are familiar with <a href="http://www.numpy.org/">numpy</a>, the transition from <code>numpy.array</code> to <code>torch.tensor</code> is rather straightforward (as demonstrated in <a href="https://pytorch.org/tutorials/beginner/blitz/tensor_tutorial.html">this tutorial</a>).</p>
 <h3>Contents</h3>
 <p></p>
 <ul>
@@ -72,10 +73,11 @@ PrefaceChapter 1. The Golem of PragueChapter 2. Small Worlds and Large WorldsCha
 <li><p><a href="03-sampling-the-imaginary.html">Chapter 3. Sampling the Imaginary</a></p></li>
 <li><p><a href="04-linear-models.html">Chapter 4. Linear Models</a></p></li>
 <li><p><a href="05-multivariate-linear-models.html">Chapter 5. Multivariate Linear Models</a></p></li>
-<li><p><a href="06-overfitting-regularization-and-information-criteria.html">Code 6.1</a></p></li>
-<li><p><a href="07-interactions.html">Code 7.1</a></p></li>
-<li><p><a href="08-markov-chain-monte-carlo.html">Code 8.1</a></p></li>
-<li><p><a href="09-big-entropy-and-the-generalized-linear-model.html">Code 9.1</a></p></li>
+<li><p><a href="06-overfitting-regularization-and-information-criteria.html">Chapter 6. Overfitting, Regularization, and Information Criteria</a></p></li>
+<li><p><a href="07-interactions.html">Chapter 7. Interactions</a></p></li>
+<li><p><a href="08-markov-chain-monte-carlo.html">Chapter 8. Markov Chain Monte Carlo</a></p></li>
+<li><p><a href="09-big-entropy-and-the-generalized-linear-model.html">Chapter 9. Big Entropy and the Generalized Linear Model</a></p></li>
+<li><p><a href="10-counting-and-classification.html">Chapter 10. Counting and Classification</a></p></li>
 <li><p><a href="15-horoscopes.html">Chapter 15. Horoscopes</a></p></li>
 </ul>
 <h3>Supplements</h3>
@@ -85,6 +87,9 @@ PrefaceChapter 1. The Golem of PragueChapter 2. Small Worlds and Large WorldsCha
 </li>
 <li>
 <p><a href="data/">data</a></p>
+</li>
+<li>
+<p><a href="https://github.com/fehiepsi/rethinking-pyro">source</a></p>
 </li>
 </ul>
 <h3>Installation</h3>
