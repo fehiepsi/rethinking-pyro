@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css?family=Playfair+Display:700,900" rel="stylesheet">
 <meta name="theme-color" content="#5670d4">
 <meta name="generator" content="Nikola (getnikola.com)">
-<link rel="alternate" type="application/rss+xml" title="RSS" href="rss.xml">
+<link rel="alternate" type="application/rss+xml" title="RSS" hreflang="en" href="rss.xml">
 <link rel="canonical" href="https://fehiepsi.github.io/rethinking-pyro/">
 <!--[if lt IE 9]><script src="assets/js/html5.js"></script><![endif]--><meta name="author" content="fehiepsi">
 <meta property="og:site_name" content="Statistical Rethinking with PyTorch and Pyro">
@@ -18,7 +18,7 @@
 <meta property="og:url" content="https://fehiepsi.github.io/rethinking-pyro/">
 <meta property="og:description" content="Statistical Rethinking is an excellent book for applied Bayesian data analysis. The accompanying codes for the book are written in R and Stan. They are then ported to Python language using PyMC3. Rece">
 <meta property="og:type" content="article">
-<meta property="article:published_time" content="2019-02-01T23:36:03-05:00">
+<meta property="article:published_time" content="2025-05-04T00:41:40-04:00">
 </head>
 <body>
 <a href="#content" class="sr-only sr-only-focusable">Skip to main content</a>
@@ -35,7 +35,7 @@
             </div>
         </div>
           <div class="col-md-6 col-xs-10 col-sm-10 bootblog4-brand" style="width: auto;">
-            <a class="navbar-brand blog-header-logo text-dark" href="https://fehiepsi.github.io/rethinking-pyro/">
+            <a class="navbar-brand blog-header-logo text-dark" href=".">
 
             <span id="blog-title">Statistical Rethinking with PyTorch and Pyro</span>
         </a>
@@ -45,7 +45,16 @@
 </div>
     </div>
 </header><nav class="navbar navbar-expand-md navbar-light bg-white static-top"><div class="collapse navbar-collapse bs-nav-collapsible" id="bs-navbar">
-            <ul class="navbar-nav nav-fill d-flex w-100"></ul>
+            <ul class="navbar-nav nav-fill d-flex w-100">
+<li class="nav-item active">
+<a href="." class="nav-link">Contents <span class="sr-only">(active)</span></a>
+                </li>
+<li class="nav-item">
+<a href="https://fehiepsi.github.io" class="nav-link">Blog</a>
+
+                
+            </li>
+</ul>
 </div>
 <!-- /.navbar-collapse -->
 </nav>
@@ -56,13 +65,13 @@
         <!--Body content-->
         
         
+        
 <article class="post-text storypage" itemscope="itemscope" itemtype="http://schema.org/Article"><header><h1 class="p-name entry-title" itemprop="headline name"><a href="." class="u-url">Overview</a></h1>
 
         
 
     </header><div class="e-content entry-content" itemprop="articleBody text">
-    <div>
-<p><a href="https://xcelab.net/rm/statistical-rethinking/"><em>Statistical Rethinking</em></a> is an excellent book for applied <a href="https://en.wikipedia.org/wiki/Bayesian_statistics">Bayesian data analysis</a>. The <a href="https://github.com/rmcelreath/rethinking">accompanying codes for the book</a> are written in <strong>R</strong> and <strong>Stan</strong>. They are then <a href="https://github.com/pymc-devs/resources/tree/master/Rethinking">ported to Python language</a> using <a href="https://docs.pymc.io/">PyMC3</a>. Recently, <a href="http://pyro.ai/">Pyro</a> emerges as a scalable and flexible Bayesian modeling tool (see its <a href="http://pyro.ai/examples/">tutorial page</a>), so to attract statisticians to this new library, I decided to make a <em>Pyronic</em> version for the codes in this repository. Inspired by the <em>PyMC3onic</em> version, I keep the codes in this repository as close as possible to the original codes in the book.</p>
+    <p><a href="https://xcelab.net/rm/statistical-rethinking/"><em>Statistical Rethinking</em></a> is an excellent book for applied <a href="https://en.wikipedia.org/wiki/Bayesian_statistics">Bayesian data analysis</a>. The <a href="https://github.com/rmcelreath/rethinking">accompanying codes for the book</a> are written in <strong>R</strong> and <strong>Stan</strong>. They are then <a href="https://github.com/pymc-devs/resources/tree/master/Rethinking">ported to Python language</a> using <a href="https://docs.pymc.io/">PyMC3</a>. Recently, <a href="http://pyro.ai/">Pyro</a> emerges as a scalable and flexible Bayesian modeling tool (see its <a href="http://pyro.ai/examples/">tutorial page</a>), so to attract statisticians to this new library, I decided to make a <em>Pyronic</em> version for the codes in this repository. Inspired by the <em>PyMC3onic</em> version, I keep the codes in this repository as close as possible to the original codes in the book.</p>
 <p>To say a bit more about <strong>Pyro</strong>, it is a universal <a href="https://en.wikipedia.org/wiki/Probabilistic_programming_language">probabilistic programming language</a> which is built on top of <a href="https://pytorch.org/">PyTorch</a>, a very popular platform for deep learning. If you are familiar with <a href="http://www.numpy.org/">numpy</a>, the transition from <code>numpy.array</code> to <code>torch.tensor</code> is rather straightforward (as demonstrated in <a href="https://pytorch.org/tutorials/beginner/blitz/tensor_tutorial.html">this tutorial</a>).</p>
 <h3>Contents</h3>
 <p></p>
@@ -93,34 +102,29 @@
 </li>
 </ul>
 <h3>Installation</h3>
-<pre class="code literal-block"><span></span>pip install jupyter pandas pyro-ppl seaborn torch
-</pre>
-</div>
+<div class="code"><pre class="code literal-block">pip<span class="w"> </span>install<span class="w"> </span>jupyter<span class="w"> </span>pandas<span class="w"> </span>pyro-ppl<span class="w"> </span>seaborn<span class="w"> </span>torch
+</pre></div>
     </div>
     
 
 </article><!--End of body content--><footer id="footer"><div class="text-center">
-  Contents © 2019         <a href="mailto:fehiepsi@gmail.com">Du Phan</a> - Powered by         <a href="https://getnikola.com" rel="nofollow">Nikola</a>         
+  Contents © 2025         <a href="mailto:fehiepsi@gmail.com">Du Phan</a> - Powered by         <a href="https://getnikola.com" rel="nofollow">Nikola</a>         
 <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
   <img alt="Creative Commons License BY-NC-SA" style="border-width:0; margin-bottom:12px;" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png"></a>
 
 </div>
 
             
+            
         </footer>
 </div>
 </div>
 
 
-        <script src="assets/js/all-nocdn.js"></script><!-- fancy dates --><script>
-    moment.locale("en");
-    fancydates(0, "YYYY-MM-DD HH:mm");
-    </script><!-- end fancy dates --><script>
+        <script src="assets/js/all-nocdn.js"></script><script>
     baguetteBox.run('div#content', {
         ignoreClass: 'islink',
-        captions: function(element) {
-            return element.getElementsByTagName('img')[0].alt;
-    }});
+        captions: function(element){var i=element.getElementsByTagName('img')[0];return i===undefined?'':i.alt;}});
     </script><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=UA-131299125-1"></script><script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
