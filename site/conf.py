@@ -136,6 +136,8 @@ TRANSLATIONS_PATTERN = '{path}.{lang}.{ext}'
 
 NAVIGATION_LINKS = {
     DEFAULT_LANG: (
+        ("/", "Contents"),
+        ("https://fehiepsi.github.io", "Blog"),
         # ("/archive.html", "Archive"),
         # ("/categories/", "Tags"),
         # ("/rss.xml", "RSS feed"),
@@ -146,7 +148,7 @@ NAVIGATION_LINKS = {
 # although themes may not always support them. (translatable)
 # (Bootstrap 4: right-side of navbar, Bootblog 4: right side of title)
 NAVIGATION_ALT_LINKS = {
-    DEFAULT_LANG: {}
+    DEFAULT_LANG: ()
 }
 
 # Name of the theme to use.
@@ -633,7 +635,7 @@ REDIRECTIONS = []
 # For more details, read the manual:
 # https://getnikola.com/handbook.html#deploying-to-github
 # You will need to configure the deployment branch on GitHub.
-GITHUB_SOURCE_BRANCH = 'src'
+GITHUB_SOURCE_BRANCH = 'master'
 GITHUB_DEPLOY_BRANCH = 'gh-pages'
 
 # The name of the remote where you wish to push to, using github_deploy.

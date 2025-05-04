@@ -115,8 +115,10 @@ def copy_notebooks(src_file, dst_file, prev_nb, next_nb):
     # add navigation
     nav_template = "<!-- NAVIGATION -->\n< [{}]({}) | [{}]({}) >"
     navigation = nav_template.format(prev_title, prev_link, next_title, next_link)
-    nb.cells.insert(0, nbformat.v4.new_markdown_cell(navigation, metadata={"navigation": True}))
-    nb.cells.append(nbformat.v4.new_markdown_cell(navigation, metadata={"navigation": True}))
+    navigation_cell = nbformat.v4.new_markdown_cell(navigation, metadata={"navigation": True})
+    del navigation_cell["id"]
+    nb.cells.insert(0, navigation_cell)
+    nb.cells.append(navigation_cell)
 
     # reduce execution_count
     for cell in nb.cells:
